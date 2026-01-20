@@ -1,0 +1,257 @@
+<!doctype html>
+<html>
+<head>
+    <title>My Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="jquery.js"></script>
+    <style>
+    .modal {
+    	z-index:100;
+		display:none;
+		position: fixed;
+    	top: 50%;
+    	left: 50%;
+    	transform: translate(-50%, -50%);
+		padding: 10px;
+		margin: 10px;
+    	border-radius: 8px;
+		border:1px solid grey;
+    }
+	.message {
+		visibility: hidden;
+    	background: red;
+    	opacity: 1;
+		padding: 10px;
+		margin: 10px;
+		border-radius: 8px;
+    	transition: opacity 1s ease; /* durata dissolvenza */
+		text-align: center;
+	}	
+	.message.fade-out {
+    	opacity: 0;
+	}
+
+}
+
+    </style>
+</head>
+<body style='max-width:500px'>
+	<div id="title"></div>
+	<div id="filter"></div>
+	<div id="main"></div>
+	<div id="modal" class="modal"></div>
+</body>
+</html>
+	
+<script type="text/javascript">
+var wsocket = new WebSocket("ws://"+location.host+"/ws","ws")
+function propertyContent(id,prop,data) {
+	var ret=$("<div>"+prop+"</div>");
+	var jValue;
+	switch (data.type) {
+		case 0://bool
+			jValue = $("<input type='checkbox' />");
+			if (data.value  == true)
+			{
+				jValue.attr("checked",true);
+			}
+			break;
+		case 1://float
+			jValue = $("<input type='number' placeholder='"+data.svalue+"' />");
+			break;
+		case 2://integer
+			jValue = $("<input type='number' value='"+data.value+"' />");
+			break;
+		case 3://string
+			jValue = $("<input type='text' value='"+data.value+"' />");
+			break;
+		case 4://string
+			jValue = $("<select/>");
+			$.each(data.options, function(val, text) {
+				jOption = $('<option></option>').val(val).html(text)
+				if (val == data.value)
+				 {
+					jOption.attr("selected",true);
+				 }
+				jValue.append( jOption)
+				
+			});
+			break;
+
+	}
+	if (data.rw == false) {
+		jValue.attr("readonly",true);
+	}
+	jValue.addClass('updatable');
+	jValue.addClass(id+"_"+prop);
+	jValue.change(function(){
+	var val;
+	if ($( this ).attr('type')=='checkbox') {
+		if ($( this ).is(':checked')) {
+			val = "true"
+		}
+		else {
+			val = "false"
+		}
+	}
+	else {
+		val = $( this ).val()
+	}
+	$( this ).removeAttr('value')
+	sendRequest("sp","setProperty",{objId:id,propId:prop,value:val});
+	});
+	var tmp=$("<div/>");
+	tmp.append(jValue);
+	ret = $(ret.add(tmp));
+	return ret;
+}
+function ojectDetailContent(data) {
+	var container = $("<div/>");
+	var header=$("<div>X</div>");
+	header.click(function() {
+	 	$("#modal").hide();
+	 });
+	 container.append(header);
+	 var table = $("<div style='display:grid;gap:8px;grid-template-columns:max-content max-content'/>");
+	 for (var prop in data.properties) {
+	 	if (Object.prototype.hasOwnProperty.call(data.properties,prop)) {
+	 		table.append(propertyContent(data.id,prop,data.properties[prop]));
+	 	}
+	 }
+	container.append(table); 
+	container.append("<div id='message' class='message'/>")
+	return container;
+}
+function ojectTypeContent(data) {
+	var container = $("<div style='display:flex;justify-content: space-between;'></div>");
+	$.each(data,function(index,value) {
+		var item = $("<input type='checkbox' checked id='"+"flt"+value+"'/>")
+		item.change(function() {
+			sendRequest("getObjectList","getObjectList");
+   		});
+	 	container.append(item);
+	 	var item = $("<label for id='"+"flt"+value+"'>"+value+"</label>")
+	 	container.append(item);
+	})
+	return container;
+}
+function ojectListContent(data) {
+	var container = $("<div style='display:grid;  gap: 5%; grid-template-columns:max-content max-content minmax(0, 1fr) max-content max-content'></div>");
+	$.each(data,function(index,value) {
+		if ($("#flt"+value.type).prop("checked"))
+		{
+			console.log(value.type);
+			var item= $("<div/>").text(value.type);
+			container.append(item);
+			var item= $("<div/>").text(value.name);
+			item.click(function() {
+				var rq={}
+				rq.objId=value.id;
+				sendRequest("getObject","getObject",rq);
+			});
+			container.append(item);
+				
+			var item= $("<div />").text(value.svalue);
+			item.addClass('updatable')
+			item.addClass(value.id+"_"+"value")
+			container.append(item);
+			var item= $("<div />").text(value.override);
+			item.addClass('updatable')
+			item.addClass(value.id+"_"+"override");
+			container.append(item);
+			var item= $("<div />").text(value.fail);
+			item.addClass('updatable')
+			item.addClass(value.id+"_"+"fail");
+			container.append(item);
+		}
+	 })
+	 return container;
+}
+function sendRequest(id, cmd, data=null) {
+	var obj={}
+	obj.id = id
+	obj.cmd = cmd
+	obj.data = data
+	wsocket.send(JSON.stringify(obj))
+}
+function connect() {
+ 	wsocket.onmessage = function (event) {
+ 		var obj = JSON.parse(event.data);
+ 		if (obj.id == "getObjectList") {
+ 			$("#main").html(ojectListContent(obj.data)) 			
+ 		}
+ 		else if(obj.id == "getObjectTypes") {
+ 			$("#filter").html(ojectTypeContent(obj.data))
+ 		}
+ 		else if(obj.id == "getObject") {
+ 			$("#modal").html(ojectDetailContent(obj.data))
+		 	$("#modal").show();
+		}
+		else if(obj.id == "propChange") {
+			console.log("change",obj.data.id,obj.data.svalue)
+			var updatable=$(".updatable."+obj.data.id)
+			$.each(updatable, function(index, value) {
+				if($(this).attr("placeholder")) {
+					$(value).attr('placeholder',obj.data.svalue);
+				}
+				else if ($(value).val !==undefined) { 
+	    			$(value).val(obj.data.svalue);
+	    		}
+				if ($(value).text !==undefined) {
+					$(value).text(obj.data.svalue);
+				}
+				if ($(value).attr("type") =="checkbox") {
+					if (obj.data.value) {
+							$(value).attr("checked",true);
+					}
+					else {
+							$(value).removeAttr("checked");
+					}
+				}
+	    		
+			});
+		}
+		else if(obj.id == "ping") {
+		}
+		else if(obj.id == "sp") {
+			if (obj.result!="OK")
+			{
+				$("#message").html(obj.result+":"+obj.data.error);
+				$("#message").css({ visibility: 'visible' })
+
+				setTimeout(() => {
+					$("#message").addClass("fade-out");	
+					setTimeout(() => {
+						$("#message").removeClass("fade-out");				
+						$("#message").css({ visibility: 'hidden' })
+					}, 1000); // deve combaciare con la transizione CSS
+				}, 2500);
+			}
+
+		}
+		else
+ 			console.log("unk message",obj)
+	}
+	wsocket.onclose = function (event) {
+		 setTimeout(function() {connect();}, 1000);
+		 $("#title").html("disconnected");
+		 console.log("disconnected")
+	}
+	 	
+ 	wsocket.onopen = function (event) {
+ 		console.log("connected")
+ 		
+ 		$("#title").html("connected")
+ 		sendRequest("getObjectTypes","getObjectTypes");
+ 		sendRequest("getObjectList","getObjectList");
+ 		window.setInterval(function(){
+	 		sendRequest("ping");
+ 		},1000);
+	}
+}
+$( document ).ready(function() {
+connect();
+});
+</script>
+</BODY>
+</HTML>
