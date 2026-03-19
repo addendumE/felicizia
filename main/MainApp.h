@@ -16,7 +16,11 @@
 #include "UsRange.h"
 class MyPersistence: public Persistance {
 public:
-	MyPersistence(Protocol &prot, ObjManager &om, Nvs &nvs):protocol(prot),om(om),nvs(nvs){};
+	MyPersistence(Protocol &prot, ObjManager &om, Nvs &nvs, ThingSpeak &ts):
+		protocol(prot),
+		om(om),
+		nvs(nvs),
+		ts(ts){};
 	virtual ~MyPersistence(){};
 	void changeNotify(string objId, PropertyId p)
 	{
@@ -82,20 +86,8 @@ public:
 private:
 	Protocol &protocol;
 	ObjManager &om;
-	Nvs &nvs;	
-};
-
-
-class PublishData: public Channel
-{
-public:
-	PublishData()
-	{
-		push_back("1.0");
-		push_back("2.0");
-		push_back("3.0");
-	}
-	virtual ~PublishData(){};
+	Nvs &nvs;
+	ThingSpeak &ts;
 };
 
 
@@ -107,13 +99,12 @@ public:
 private:
 	string version;
 	Timer reboot;
-	Timer publishTimer;
 	Nvs nvs;
+	ThingSpeak ts;
 	ObjManager *objManager;
 	Protocol *protocol;
 	MyPersistence *persistance;
 	DataManager *dataManager;
 	Hal hal;
-	void publishData();
 	void onMode(WifiManager::Mode mode);
 };

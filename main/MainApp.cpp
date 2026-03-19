@@ -10,11 +10,10 @@ static const char * TAG="APP";
 
 MainApp::MainApp():
 	reboot("reb", 1000),
-	publishTimer("pub", 3600,true),
 	nvs("APP",NVS_READWRITE),
 	objManager(new (ObjManager)),
 	protocol(new Protocol(*objManager)),
-	persistance(new MyPersistence(*protocol,*objManager,nvs)),
+	persistance(new MyPersistence(*protocol,*objManager,nvs,ts)),
 	dataManager(new DataManager(*objManager,*persistance,hal))
 {
 }
@@ -35,20 +34,14 @@ void MainApp::start()
 	#endif
 		});
 
-		publishTimer.onExpired([&]()
-		{
-			ESP_LOGI(TAG,"publish timer expired!!!");
+	//string ssid,pwd,mode,key;
+	//nvs.getString("ssid",ssid);
+	//nvs.getString("pwd",pwd);
+	//nvs.getString("pwd",key);
 
-			publishData();
-		});
-
-
-	string ssid,pwd,mode;
-	nvs.getString("ssid",ssid);
-	nvs.getString("pwd",pwd);
-
-	WifiManager::ssid = ssid;
-	WifiManager::pwd = pwd;
+	ts.setKey(dataManager->getKey());
+	WifiManager::ssid = dataManager->getSSID();
+	WifiManager::pwd = dataManager->getPwd();
 	WifiManager::apHdr = "felicizia";
 
 
@@ -64,18 +57,6 @@ void MainApp::start()
 	protocol->start(80);
 }
 
-
-void MainApp::publishData()
-{
-	string key;
-	nvs.getString("key",key);
-	PublishData publishData;
-	//"MU572UZGU2DB12GF"
-	string res;
-	ThingSpeak::publish(key,publishData,res);
-	ESP_LOGI(TAG,"%s",res.c_str());
-	nvs.setString("lastts",res);
-}
 
 void MainApp::onMode(WifiManager::Mode mode)
 {

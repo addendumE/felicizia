@@ -29,6 +29,9 @@ const map<PropertyId,string> Types::propertyNames = {
    {PROP_TH_H,"high_level"},
    {PROP_TH_MODE,"mode"},
    {PROP_TH_LAST_VALUE,"last_value"},
+   {PROP_SSID,"ssid"},
+   {PROP_SSID_KEY,"ssid_key"},
+   {PROP_TS_KEY,"ts_key"}
 };
 
 const map<Type,string> Types::typeNames = {

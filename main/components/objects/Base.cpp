@@ -212,6 +212,7 @@ cJSON * Base::getPropertyJson(PropertyId pId)
 	getPropertyJsonValue(pId,&jValue);
 	cJSON_AddItemToObject(jItem, "value", jValue);
 	cJSON_AddBoolToObject(jItem, "rw", propertyList.at(pId)->getWritable());
+	cJSON_AddBoolToObject(jItem, "persist", propertyList.at(pId)->getPersistance());
 	cJSON_AddNumberToObject(jItem, "type", propertyList.at(pId)->getType());
 	cJSON_AddStringToObject(jItem, "svalue", (propertyList.at(pId)->toString()).c_str());
 	if (propertyList.at(pId)->getType() == VALUE_TYPE_ENUM)

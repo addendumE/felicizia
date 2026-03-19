@@ -7,9 +7,8 @@
 
 #include "DigitalOutput.h"
 
-DigitalOutput::DigitalOutput(string id,string name, Persistance &p, int idx , bool _default,  Hal &hal):
-	Base(TYPE_BINARY_OUTPUT,id,name,p),
-	hal(hal)
+DigitalOutput::DigitalOutput(string id,string name, Persistance &p, int idx , bool _default):
+	Base(TYPE_BINARY_OUTPUT,id,name,p)
 {
 
 	addBoolProperty(PROP_VALUE,Property::MODE_READONLY,_default,"on","off");
@@ -49,7 +48,6 @@ void DigitalOutput::setValue(bool val)
 		val = getPropertyValue<bool>(PROP_OVERRIDE_VALUE,_found);
 	}
 	setPropertyValue<bool>(PROP_VALUE,val);
-	hal.setOutput(val);
 }
 
 bool DigitalOutput::getValue()

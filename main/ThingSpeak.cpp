@@ -16,19 +16,21 @@ ThingSpeak::ThingSpeak() {
 ThingSpeak::~ThingSpeak() {
 }
 
+void ThingSpeak::setKey(string _key)
+{
+	key = _key;
+}
 
-int ThingSpeak::publish(const string key,const Channel &ch, string &res)
+
+int ThingSpeak::publish(int channelID, string &value)
 {
 	string payload = "https://api.thingspeak.com/update?api_key="+ key;
-	for (auto i=0; i < ch.size(); i++)
-	{
-		payload += "&field" + to_string(i+1) + "=" + ch.at(i);
-	}
+	payload += "&field" + to_string(channelID) + "=" + value;
 	ESP_LOGI(TAG,"URL:%s",payload.c_str());
 	string resp;
 	int ret = getSynch(payload, resp, 443);
 	ESP_LOGI(TAG,"RESP:%d",ret);
-	res="["+to_string(ret)+"] "+ getHeaders()["Date"];
+	lastRes="["+to_string(ret)+"] "+ getHeaders()["Date"];
 	return ret;
 }
 

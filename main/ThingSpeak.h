@@ -3,13 +3,14 @@
 
 using namespace std;
 
-typedef vector <string> Channel;
-
-
 class ThingSpeak: private Http {
 public:
 	ThingSpeak();
 	virtual ~ThingSpeak();
-	int publish(const string key,const Channel &,string &res);
+	int publish(int channelID, string &value);
+	void setKey(string k);
+private:
+	string key;
+	string lastRes;
 };
 

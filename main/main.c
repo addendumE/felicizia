@@ -9,6 +9,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include <i2cdev.h>
 static const char *TAG = "main";
 
 extern void startup();
@@ -21,5 +22,6 @@ void app_main(void)
 	    ret = nvs_flash_init();
 	}
 	ESP_ERROR_CHECK(ret);
+    ESP_ERROR_CHECK(i2cdev_init());
     startup();
 }

@@ -44,9 +44,10 @@
 </html>
 	
 <script type="text/javascript">
-var wsocket = new WebSocket("ws://"+location.host+"/ws","ws")
+var wsocket;
 function propertyContent(id,prop,data) {
 	var ret=$("<div>"+prop+"</div>");
+	// fa-pencil  fa-floppy-o
 	var jValue;
 	switch (data.type) {
 		case 0://bool
@@ -175,6 +176,7 @@ function sendRequest(id, cmd, data=null) {
 	wsocket.send(JSON.stringify(obj))
 }
 function connect() {
+	wsocket = new WebSocket("ws://"+location.host+"/ws","ws")
  	wsocket.onmessage = function (event) {
  		var obj = JSON.parse(event.data);
  		if (obj.id == "getObjectList") {

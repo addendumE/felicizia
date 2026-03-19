@@ -6,13 +6,9 @@
  */
 
 #include "AnalogInput.h"
-#include "esp_log.h"
-
-static const char *TAG="AI";
 AnalogInput::AnalogInput(string id,string name,Persistance &p, Unit unit, int decimals, float _default):
 	Base(TYPE_ANALOG_INPUT,id,name,p)
 {
-
 	addFloatProperty(PROP_VALUE,Property::MODE_READONLY,_default,unit,decimals);
 	addFloatProperty(PROP_OVERRIDE_VALUE,Property::MODE_WRITABLE_PERSISTENT, _default,unit,decimals,
 			[&](float ov) {
@@ -36,6 +32,8 @@ AnalogInput::AnalogInput(string id,string name,Persistance &p, Unit unit, int de
 			}
 	);
 	addBoolProperty(PROP_FAIL,Property::MODE_READONLY,false,"yes","no");
+	addFloatProperty(PROP_CAL_OFFSET,Property::MODE_WRITABLE_PERSISTENT,0.0f,unit,decimals);
+	addFloatProperty(PROP_CAL_GAIN,Property::MODE_WRITABLE_PERSISTENT,1.0f,UNIT_NONE,decimals);
 }
 
 AnalogInput::~AnalogInput() {
@@ -44,7 +42,12 @@ AnalogInput::~AnalogInput() {
 
 void AnalogInput::setValue(float val,bool fail)
 {
+
 	bool _found;
+	float cal_gain =  getPropertyValue<float>(PROP_CAL_GAIN,_found);
+	float cal_offset = getPropertyValue<float>(PROP_CAL_OFFSET,_found);
+	val = cal_offset + (val * cal_gain);
+
 	bool _override = getPropertyValue<bool>(PROP_OVERRIDE,_found);
 	if (_override)
 	{

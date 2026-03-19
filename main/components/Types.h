@@ -55,7 +55,10 @@ namespace Types
 		PROP_TH_L,
 		PROP_TH_H,
 		PROP_TH_MODE,
-		PROP_TH_LAST_VALUE
+		PROP_TH_LAST_VALUE,
+		PROP_SSID,
+		PROP_SSID_KEY,
+		PROP_TS_KEY
 	};
 
 extern const map<Type,string> typeNames;

@@ -1,0 +1,8 @@
+/build/
+/pcbuild/
+/managed_components/
+.cproject
+.project
+.vscode/
+dependencies copy.lock
+sdkconfig.old
