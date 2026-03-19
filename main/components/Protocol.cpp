@@ -98,13 +98,16 @@ void Protocol::onMessage(const string &msg)
 
 		res = handleProperySet(jDataReq,&jDataResp);
 	}
+	else if (cmd == "ping")
+	{
+		res = RES_OK;
+	}
 	if (jDataResp)
 	{
 		cJSON_AddItemToObject(jResp,"data",jDataResp);
 	}
 
 	cJSON_AddStringToObject(jResp, "id",id.c_str());
-	ESP_LOGI(TAG,"*** %d **",res);
 	switch (res)
 	{
 		case RES_OK:

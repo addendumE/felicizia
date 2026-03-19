@@ -47,6 +47,7 @@ void MainApp::start()
 
 	if (ssid.size())
 	{
+		ESP_LOGI(TAG,"joining %s",WifiManager::ssid.c_str());
 		join();
 	}
 	else

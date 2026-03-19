@@ -41,19 +41,12 @@ cJSON *ObjManager::getObjectList()
 	{
 		bool found;
 		cJSON *jItem = cJSON_CreateObject();
-		ESP_LOGI(TAG,"id");
 		cJSON_AddStringToObject(jItem, "id", item.second->getId().c_str());
-		ESP_LOGI(TAG,"type");
 		cJSON_AddStringToObject(jItem, "type", item.second->getPropertyValue<string>(PROP_TYPE,found).c_str());
-		ESP_LOGI(TAG,"name");
 		cJSON_AddStringToObject(jItem, "name", item.second->getPropertyValue<string>(PROP_NAME,found).c_str());
-		ESP_LOGI(TAG,"svalue");
 		cJSON_AddStringToObject(jItem, "svalue", item.second->getPropertyValueString(PROP_VALUE).c_str());
-		ESP_LOGI(TAG,"override");
 		cJSON_AddStringToObject(jItem, "override", item.second->getPropertyValueString(PROP_OVERRIDE).c_str());
-		ESP_LOGI(TAG,"fail");
 		cJSON_AddStringToObject(jItem, "fail", item.second->getPropertyValueString(PROP_FAIL).c_str());
-		ESP_LOGI(TAG,"adding");
 		cJSON_AddItemToArray(jOut,jItem);
 	}
 	return jOut;
@@ -108,7 +101,7 @@ Property *ObjManager::getPropertyPtr(Base * obj,string propId)
 
 void ObjManager::propChangeNotification(string objId,Types::PropertyId id)
 {
-	ESP_LOGI(TAG,"%s %s changed",objId.c_str(),propertyNames.at(id).c_str());
+	//ESP_LOGI(TAG,"%s %s changed",objId.c_str(),propertyNames.at(id).c_str());
 	/*Base *oPnt = getObjectPtr(objId);
 	ObjManager::Bind src(oPnt,id);
 	if (bingings.count(src) > 0)

@@ -275,7 +275,6 @@ esp_err_t Websocket::callback_protocol(httpd_req_t *req)
 		ESP_LOGE(TAG, "httpd_ws_recv_frame failed to get frame len with %d", ret);
 	    return ret;
 	}
-	ESP_LOGI(TAG, "Packet type: %d", ws_pkt.type);
 	if (ws_pkt.len) {
 		uint8_t *buf = NULL;
 		/* ws_pkt.len + 1 is for NULL termination as we are expecting a string */
