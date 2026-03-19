@@ -24,12 +24,12 @@ private:
     void loop();
     ObjManager &om;
     OneWire ow;
-    mcp23x17_t mcp23x17Dev;
+    i2c_dev_t mcp23x17Dev;
     i2c_dev_t ads11xDev;
     Persistance &persistance;
     Hal &hal;
    	UsRange storageLevelMeter;
-   	UsRange trenchLevelMeter;
+   //	UsRange trenchLevelMeter;
     Device device;
     AnalogInput vbatt;
     AnalogInput ppm;

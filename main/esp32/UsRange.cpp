@@ -1,5 +1,7 @@
 #include <UsRange.h>
 #include <esp_log.h>
+#include <strings.h>
+
 #define BUF_SIZE 128
 
 static char *TAG="UsRange";

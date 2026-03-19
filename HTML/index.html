@@ -176,7 +176,7 @@ function sendRequest(id, cmd, data=null) {
 	wsocket.send(JSON.stringify(obj))
 }
 function connect() {
-	wsocket = new WebSocket("ws://"+location.host+"/ws","ws")
+	wsocket = new WebSocket("ws://"+location.host,"ws")
  	wsocket.onmessage = function (event) {
  		var obj = JSON.parse(event.data);
  		if (obj.id == "getObjectList") {

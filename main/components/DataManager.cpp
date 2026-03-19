@@ -15,32 +15,32 @@ ads11xDev({}),
 persistance(persistance),
 hal(hal),
 storageLevelMeter(1,4),
-trenchLevelMeter(2,5),
+//trenchLevelMeter(1,5),
 device("dev","device",persistance),
-vbatt("vBatt","tensione batteria",persistance,UNIT_VOLTAGE,1),
+vbatt("vbatt","tensione batteria",persistance,UNIT_VOLTAGE,1),
 ppm("ppm","conducibilità",persistance,UNIT_CONDUCTIVITY,1),
-trenchLevel("thLev","livello fosso",persistance,UNIT_DISTANCE,1),
-storageLevel("stLev","livello serbatotio",persistance,UNIT_DISTANCE,1),
+trenchLevel("trenchLevel","livello fosso",persistance,UNIT_DISTANCE,1),
+storageLevel("storageLevel","livello serbatotio",persistance,UNIT_DISTANCE,1),
 airTemperature("airTemp","temperatura aria",persistance,UNIT_TEMPERATURE,1),
 waterTemperature("watTemp","temperatura acqua",persistance,UNIT_TEMPERATURE,1),
 pumpOnTime("pumpOnTime","tempo pompaggio",persistance,UNIT_MINUTES,1),
 pumpDailyCycles("pumpDailyCycles","cicli pompaggio",persistance,UNIT_NONE,0),
-svuotamentoCanaleTh("trenchPump","fosso pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
-riempimentoSerbatoioTh("storagePumpTh","serbatoio pronto a riempimento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
-svuotamentoSerbatoioTh("storageFullTh","serbatoio pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
+svuotamentoCanaleTh("svuotamentoCanaleTh","fosso pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
+riempimentoSerbatoioTh("riempimentoSerbatoioTh","serbatoio pronto a riempimento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
+svuotamentoSerbatoioTh("svuotamentoSerbatoioTh","serbatoio pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
 batteryGoodTh("batteryGoodTh","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
 airTemperatureGoodTh("airTemperatureGoodTh","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
 ppmGoodTh("ppmGoodTh","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_OVER),
 trenchPumpCmd("trenchPumpCmd","trench pump",persistance,0,false),
 storagePumpCmd("storagePumpCmd","storage pump",persistance,0,false),
-ledAlive("storagePumpCmd","storage pump",persistance,0,false),
-ledLowBatt("storagePumpCmd","storage pump",persistance,0,false),
-ledLowFosso("storagePumpCmd","storage pump",persistance,0,false),
-ledTorbidita("storagePumpCmd","storage pump",persistance,0,false),
-ledGelo("storagePumpCmd","storage pump",persistance,0,false),
-ledSerbatoioVuoto("storagePumpCmd","storage pump",persistance,0,false),
-ledErrorePompaFosso("storagePumpCmd","storage pump",persistance,0,false),
-ledErrorePompaSerbatoio("storagePumpCmd","storage pump",persistance,0,false)
+ledAlive("ledAlive","led alive",persistance,0,false),
+ledLowBatt("ledLowBatt","led low batt",persistance,0,false),
+ledLowFosso("ledLowFosso","led low fosso",persistance,0,false),
+ledTorbidita("ledTorbidita","led torbidita",persistance,0,false),
+ledGelo("ledGelo","led gelo",persistance,0,false),
+ledSerbatoioVuoto("led serbatoio vuoto","storage pump",persistance,0,false),
+ledErrorePompaFosso("led errore pompa fosso","storage pump",persistance,0,false),
+ledErrorePompaSerbatoio("led errore pompa serbatoio","storage pump",persistance,0,false)
 {
     om.addObject(&device);
     om.addObject(&vbatt);
@@ -69,16 +69,29 @@ ledErrorePompaSerbatoio("storagePumpCmd","storage pump",persistance,0,false)
     om.addObject(&ledErrorePompaSerbatoio);
 
     ow.init(6);   
-    ESP_ERROR_CHECK(ads111x_init_desc(&ads11xDev, ADS111X_ADDR_GND, I2C_NUM_0, GPIO_NUM_4, GPIO_NUM_5));
-    ESP_ERROR_CHECK(ads111x_set_mode(&ads11xDev, ADS111X_MODE_SINGLE_SHOT));    // Continuous conversion mode
-    ESP_ERROR_CHECK(ads111x_set_data_rate(&ads11xDev, ADS111X_DATA_RATE_8)); // 32 samples per second
- 
-    ESP_ERROR_CHECK(ads111x_set_gain(&ads11xDev, ADS111X_GAIN_4V096));
-
-    ESP_ERROR_CHECK(mcp23x17_init_desc(&mcp23x17Dev, MCP23X17_ADDR_BASE, I2C_NUM_0, GPIO_NUM_4, GPIO_NUM_5));
+    //ESP_ERROR_CHECK(ads111x_init_desc(&ads11xDev, ADS111X_ADDR_GND, I2C_NUM_0, GPIO_NUM_4, GPIO_NUM_5));
+    
+    mcp23x17Dev.port = I2C_NUM_0;
+    mcp23x17Dev.addr = MCP23X17_ADDR_BASE;
+    mcp23x17Dev.cfg.sda_io_num = GPIO_NUM_6;
+    mcp23x17Dev.cfg.scl_io_num = GPIO_NUM_7;
+    mcp23x17Dev.cfg.master.clk_speed = 125000;
+    mcp23x17Dev.cfg.clk_flags = 0;
+    i2c_dev_create_mutex(&mcp23x17Dev);
     mcp23x17_port_write(&mcp23x17Dev,0x0000);
     mcp23x17_port_set_mode(&mcp23x17Dev,0x00FF); //port A->IN , portb-> out
     mcp23x17_port_set_pullup(&mcp23x17Dev,0xFF00);
+
+   /* ads11xDev.port = I2C_NUM_0;
+    ads11xDev.addr = ADS111X_ADDR_GND;
+    ads11xDev.cfg.sda_io_num = GPIO_NUM_6;
+    ads11xDev.cfg.scl_io_num = GPIO_NUM_7;
+    ads11xDev.cfg.clk_flags = 0;
+    ads11xDev.cfg.master.clk_speed = 125000;
+    i2c_dev_create_mutex(&ads11xDev);
+    ads111x_set_mode(&ads11xDev, ADS111X_MODE_SINGLE_SHOT); 
+    ads111x_set_data_rate(&ads11xDev, ADS111X_DATA_RATE_8);
+    ads111x_set_gain(&ads11xDev, ADS111X_GAIN_4V096);*/
 
 
     gpio_config_t io_conf = {
@@ -115,12 +128,13 @@ return device.getPropertyValueString(PROP_TS_KEY);
 bool DataManager::adcRead(ads111x_mux_t mux, float &res)
 {
     bool ret = false;
-    ESP_ERROR_CHECK(ads111x_set_input_mux(&ads11xDev, mux));
-    ESP_ERROR_CHECK(ads111x_start_conversion(&ads11xDev));
+    return true;
+    ads111x_set_input_mux(&ads11xDev, mux);
+    ads111x_start_conversion(&ads11xDev);
     for (int i = 0; i < 10; i++)
     {
         bool busy;
-        ESP_ERROR_CHECK(ads111x_is_busy(&ads11xDev,&busy));
+        ads111x_is_busy(&ads11xDev,&busy);
         if (!busy)
         {
             ret = true;
@@ -129,7 +143,7 @@ bool DataManager::adcRead(ads111x_mux_t mux, float &res)
         vTaskDelay(10);
     }
     int16_t val;
-    ESP_ERROR_CHECK(ads111x_get_value(&ads11xDev, &val));
+    ads111x_get_value(&ads11xDev, &val);
     res = val*4096.0f/32760.0f;
     return ret;
 }
@@ -161,16 +175,16 @@ void DataManager::doInput()
     storageLevel.setValue(storageLevelMeter.getMeasure(),storageLevelMeter.getMeasure()>=5.9f);
 
     // TRENCH LEVEL
-    trenchLevel.setValue(trenchLevelMeter.getMeasure(),trenchLevelMeter.getMeasure()>=5.9f);
+   // trenchLevel.setValue(trenchLevelMeter.getMeasure(),trenchLevelMeter.getMeasure()>=5.9f);
 
     // DEVICE
     device.setFreeHeap(hal.heapOccupation());
 
     // ROTARY SWITCHES
     uint16_t digital;
-    mcp23x17_port_read(&mcp23x17Dev,&digital);
-    pumpOnTime.setValue(digital & 0x0F);
-    pumpDailyCycles.setValue((digital & 0xF0) >> 4);
+    //mcp23x17_port_read(&mcp23x17Dev,&digital);
+    //pumpOnTime.setValue(digital & 0x0F);
+    //pumpDailyCycles.setValue((digital & 0xF0) >> 4);
 }
 
 void DataManager::doOutput()

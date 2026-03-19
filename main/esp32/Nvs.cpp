@@ -17,11 +17,13 @@ Nvs::Nvs(const string ns,nvs_open_mode_t open_mode):
 	esp_err_t res = nvs_open(ns.c_str(), open_mode, &handle);
 	if (res != ESP_OK)
 	{
-		ESP_LOGW(TAG,"Nvs [%s] open error %x",ns.c_str(),(int)res);
+		ESP_LOGE(TAG,"Nvs [%s] open error %d",ns.c_str(),(int)res);
 		opened = false;
 	}
 	else
 	{
+		ESP_LOGI(TAG,"Nvs [%s] open success with handle %" PRIx32,ns.c_str(),(uint32_t)handle);
+		
 		opened = true;
 	}
 	Lock::give();
@@ -31,7 +33,7 @@ bool Nvs::getString(const string key, string &value)
 {
 	Lock::take();
 	bool ret = false;
-	ESP_LOGI(TAG,"getString [%s]%s",ns.c_str(),key.c_str());
+	ESP_LOGI(TAG,"getString [%s] %s",ns.c_str(),key.c_str());
 	if (opened)
 	{
 		size_t size;
@@ -55,7 +57,7 @@ bool Nvs::getString(const string key, string &value)
 		}
 		else
 		{
-		    ESP_LOGE(TAG,"getString: ERROR %x",ret);
+		    ESP_LOGE(TAG,"getString: ERROR %x" ,res);
 		}
 	}
 	else
@@ -70,7 +72,7 @@ bool Nvs::setString(const string key, const string value)
 {
 	Lock::take();
 	bool ret = false;
-	ESP_LOGI(TAG,"setString [%s]%s",ns.c_str(),key.c_str());
+	ESP_LOGI(TAG,"setString [%s] %s",ns.c_str(),key.c_str());
 	ESP_LOGD(TAG,"setString value:%s",value.c_str());
 	if (opened)
 	{
@@ -146,5 +148,6 @@ Nvs::~Nvs() {
 		nvs_close(handle);
 	}
 	Lock::give();
+	ESP_LOGI(TAG,"Nvs handle closed %" PRIx32,(uint32_t)handle);
 }
 
