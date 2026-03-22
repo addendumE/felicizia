@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 using namespace std;
-
+#define NVS_READWRITE 1
 class Nvs  {
 public:
 	Nvs(const string ns,int i = 0);

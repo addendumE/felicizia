@@ -3,7 +3,7 @@
 #include "esp_log.h"
 static const char * TAG="APP";
 
-#ifndef LINUX
+#ifndef LINUX_PLATFORM
 #include "esp_system.h"
 #endif
 
@@ -29,7 +29,7 @@ void MainApp::start()
 	reboot.onExpired([&]()
 		{
 			ESP_LOGI(TAG,"rebooting!!!");
-	#ifndef LINUX
+	#ifndef LINUX_PLATFORM
 			esp_restart();
 	#endif
 		});

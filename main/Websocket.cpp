@@ -20,10 +20,9 @@ Websocket::Websocket():
 {
 #ifdef LINUX_PLATFORM
 	memset(&protocols, 0, sizeof(protocols));
-	protocols[0].name="http-only";
-	protocols[0].callback = callback_http;
-	protocols[0].user = this;
-	protocols[1].name="default";
+	protocols[0].name="http";
+	protocols[0].callback = lws_callback_http_dummy;
+	protocols[1].name="ws";
 	protocols[1].callback = callback_protocol;
 	protocols[1].user = this;
 	protocols[1].rx_buffer_size = RX_BUFFER_BYTES;
@@ -59,23 +58,36 @@ Websocket::~Websocket() {
 
 void Websocket::start(int port)
 {
+	 //lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_DEBUG, NULL);
 #ifdef LINUX_PLATFORM
-	pvo_opt = {
-	    NULL, NULL, "default", "1"
-	};
-	pvo = {
-	    NULL, &pvo_opt, "default", ""
-	};
+ static const struct lws_http_mount mount = {
+        .mount_next = NULL,
+        .mountpoint = "/",              // URL path
+        .origin = "./HTML",              // cartella locale
+        .def = "index.html",            // file default
+        .protocol = NULL,
+        .cgienv = NULL,
+        .extra_mimetypes = NULL,
+        .interpret = NULL,
+        .cgi_timeout = 0,
+        .cache_max_age = 0,
+        .auth_mask = 0,
+        .cache_reusable = 0,
+        .cache_revalidate = 0,
+        .cache_intermediaries = 0,
+        .origin_protocol = LWSMPRO_FILE, // serve da filesystem
+        .mountpoint_len = 1,
+        .basic_auth_login_file = NULL,
+    };
 
 	memset( &info, 0, sizeof(info) );
 
-	info.port = port;
+	info.port = 8080;
 	info.protocols = protocols;
-	info.gid = -1;
-	info.uid = -1;
-	info.pvo = &pvo;
-
+	info.mounts = &mount;
 	context = lws_create_context( &info );
+    lwsl_user("Server avviato su http://localhost:8080\n");
+
 	Thread::start();
 #else
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
@@ -101,7 +113,7 @@ void Websocket::loop()
 #ifdef LINUX_PLATFORM
 	while(true)
 	{
-		lws_service( context, 0);
+		lws_service( context, 1000);
 	}
 #endif
 }
@@ -310,17 +322,19 @@ esp_err_t Websocket::callback_protocol(httpd_req_t *req)
 #endif
 
 #ifdef LINUX_PLATFORM
+#if 0
 int Websocket::callback_http( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )
 {
 	const char * mime;
-	const char * file = (const char *) in;
-
+	//const char * file = (const char *) in;
+	string file;
 	switch( reason )
 	{
 		case LWS_CALLBACK_HTTP:
-			if (strcmp(file,"/")== 0) file = "/index.html";
-			mime = lws_get_mimetype(file,NULL);
-			lws_serve_http_file( wsi, &file[1], mime, NULL, 0 );
+			file = "./HTML"+string((const char *)in);
+			ESP_LOGI(TAG,"serving: %s",file.c_str());
+			mime = lws_get_mimetype(file.c_str(),NULL);
+			lws_serve_http_file( wsi, file.c_str(), mime, NULL, 0 );
 			break;
 		default:
 			break;
@@ -328,6 +342,7 @@ int Websocket::callback_http( struct lws *wsi, enum lws_callback_reasons reason,
 
 	return 0;
 }
+#endif
 #else
 esp_err_t Websocket::callback_http(httpd_req_t *req)
 {
