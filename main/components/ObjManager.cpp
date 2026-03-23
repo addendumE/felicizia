@@ -16,7 +16,6 @@ ObjManager::ObjManager() {
 ObjManager::~ObjManager() {
 }
 
-
 bool ObjManager::addObject(Base *obj)
 {
 	objects[obj->getId()] = obj;

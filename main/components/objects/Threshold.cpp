@@ -55,10 +55,11 @@ bool Threshold::setValue(float measure)
 {
 	bool _found;
 	bool _override = getPropertyValue<bool>(PROP_OVERRIDE,_found);
-	bool value;
+	bool value = false;
 	if (_override)
 	{
 		value = getPropertyValue<bool>(PROP_OVERRIDE_VALUE,_found);
+		setPropertyValue<bool>(PROP_VALUE,value);
 	
 	}
 	else
@@ -68,37 +69,42 @@ bool Threshold::setValue(float measure)
 		int mode = getPropertyValue<int>(PROP_TH_MODE,_found);
 		if (mode == MODE_UNDER)
 		{		// active when under
-				if (measure < thl)
+				if (measure <= thl)
 				{
 					value = true;
+					setPropertyValue<bool>(PROP_VALUE,value);
 				}
-				else if (measure > thh)
+				else if (measure >= thh)
 				{
 					value = false;
+					setPropertyValue<bool>(PROP_VALUE,value);
 				}
 		}
 		else if (mode == MODE_OVER)
 		{ //active when over
-			if (measure > thl)
-			{
-				value = true;
-			}
-			else if (measure < thh)
+			if (measure <= thl)
 			{
 				value = false;
+				setPropertyValue<bool>(PROP_VALUE,value);
+			}
+			else if (measure >= thh)
+			{
+				value = true;
+				setPropertyValue<bool>(PROP_VALUE,value);
 			}
 		}
 		else if (mode == MODE_IN)
 		{ //MODE IN
 			value = (measure>=thl && measure <=thh);
+			setPropertyValue<bool>(PROP_VALUE,value);
 		}
 		else if (mode == MODE_OUT)
 		{ //MODE OUT
 			value = (measure<= thl || measure >=thh);
+			setPropertyValue<bool>(PROP_VALUE,value);
 		}
-
 	}
-	setPropertyValue<bool>(PROP_VALUE,value);
+
 	setPropertyValue<float>(PROP_TH_LAST_VALUE,measure);
 	return value;
 }

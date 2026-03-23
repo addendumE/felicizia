@@ -14,9 +14,6 @@
 #include <functional>
 #include "Thread.h"
 #include "Lock.h"
-#ifdef LINUX_PLATFORM
-#include <libwebsockets.h>
-#else
 #include "esp_system.h"
 #include <esp_wifi.h>
 #include <esp_event.h>
@@ -25,7 +22,6 @@
 #include <sys/param.h>
 #include "nvs_flash.h"
 #include "esp_netif.h"
-//#include "esp_eth.h"
 #include <esp_http_server.h>
 #include "lwip/apps/fs.h"
 #include "esp_ota_ops.h"
@@ -33,9 +29,7 @@
 #include "esp_partition.h"
 #include "esp_image_format.h"
 
-#endif
 using namespace std;
-
 
 #define RX_BUFFER_BYTES 2048
 
@@ -52,21 +46,6 @@ public:
 private:
 	vector <string> txMessages;
 	string rxBuffer;
-
-	//function <void(string)> onMessageNotify;
-
-
-#ifdef LINUX_PLATFORM
-	unsigned char txData[LWS_SEND_BUFFER_PRE_PADDING + RX_BUFFER_BYTES + LWS_SEND_BUFFER_POST_PADDING];
-	struct lws_context *context;
-	static int callback_protocol( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len );
-	static int callback_http( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len );
-	struct lws_protocols protocols[3];
-	struct lws_protocol_vhost_options pvo_opt;
-	struct lws_protocol_vhost_options pvo;
-	struct lws_context_creation_info info;
-	typedef struct lws * ws_client_id;
-#else
 	typedef int ws_client_id;
 	struct async_resp_arg {
 		Websocket * ws;
@@ -85,7 +64,6 @@ private:
 	httpd_uri_t ota_uri;
 	esp_ota_handle_t update_handle;
 	const esp_partition_t *update_partition;
-#endif
 	list <ws_client_id> clients;
 };
 

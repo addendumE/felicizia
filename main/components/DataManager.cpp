@@ -29,7 +29,7 @@ waterTemperature("waterTemperature","temperatura acqua",persistance,UNIT_TEMPERA
 pumpOnTime("pumpOnTime","tempo pompaggio",persistance,UNIT_MINUTES,1),
 pumpDailyCycles("pumpDailyCycles","cicli pompaggio",persistance,UNIT_NONE,0),
 svuotamentoCanaleTh("svuotamentoCanaleTh","fosso pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
-riempimentoSerbatoioTh("riempimentoSerbatoioTh","serbatoio pronto a riempimento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
+riempimentoSerbatoioTh("riempimentoSerbatoioTh","serbatoio pronto a riempimento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_UNDER),
 svuotamentoSerbatoioTh("svuotamentoSerbatoioTh","serbatoio pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
 batteryGoodTh("batteryGoodTh","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
 airTemperatureGoodTh("airTemperatureGoodTh","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
@@ -40,7 +40,7 @@ ledAlive("ledAlive","led alive",persistance,0,false),
 ledLowBatt("ledLowBatt","led low batt",persistance,0,false),
 ledLowFosso("ledLowFosso","led low fosso",persistance,0,false),
 ledTorbidita("ledTorbidita","led torbidita",persistance,0,false),
-ledGelo("ledGelo","led gelo",persistance,0,false),
+ledGelo("ledGelo","led bassa temperatura aria",persistance,0,false),
 ledSerbatoioVuoto("ledSerbatoioVuoto","led serbatoio vuoto",persistance,0,false),
 ledErrorePompaFosso("ledErrorePompaFosso","led errore pompa fosso",persistance,0,false),
 ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",persistance,0,false)
@@ -73,7 +73,7 @@ ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",p
 
     ow.init(6);   
 #ifndef LINUX_PLATFORM    
-    mcp23x17Dev.port = I2C_NUM_0;
+    /*mcp23x17Dev.port = I2C_NUM_0;
     mcp23x17Dev.addr = MCP23X17_ADDR_BASE;
     mcp23x17Dev.cfg.sda_io_num = GPIO_NUM_6;
     mcp23x17Dev.cfg.scl_io_num = GPIO_NUM_7;
@@ -82,9 +82,9 @@ ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",p
 
     i2c_dev_create_mutex(&mcp23x17Dev);
     mcp23x17_port_set_mode(&mcp23x17Dev,0x00FF); //port A->IN , portb-> out
-    mcp23x17_port_set_pullup(&mcp23x17Dev,0xFF00);
+    mcp23x17_port_set_pullup(&mcp23x17Dev,0xFF00);*/
 
-   /* ads11xDev.port = I2C_NUM_0;
+    ads11xDev.port = I2C_NUM_0;
     ads11xDev.addr = ADS111X_ADDR_GND;
     ads11xDev.cfg.sda_io_num = GPIO_NUM_6;
     ads11xDev.cfg.scl_io_num = GPIO_NUM_7;
@@ -93,7 +93,7 @@ ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",p
     i2c_dev_create_mutex(&ads11xDev);
     ads111x_set_mode(&ads11xDev, ADS111X_MODE_SINGLE_SHOT); 
     ads111x_set_data_rate(&ads11xDev, ADS111X_DATA_RATE_8);
-    ads111x_set_gain(&ads11xDev, ADS111X_GAIN_4V096);*/
+    ads111x_set_gain(&ads11xDev, ADS111X_GAIN_4V096);
 
 
     gpio_config_t io_conf = {
@@ -148,8 +148,8 @@ bool DataManager::adcRead(ads111x_mux_t mux, float &res)
         }
         vTaskDelay(10);
     }
-    int16_t val;
-    ads111x_get_value(&ads11xDev, &val);
+    int16_t val = 0;
+   // ads111x_get_value(&ads11xDev, &val);
     res = val*4096.0f/32760.0f;
     return ret;
 #endif
@@ -188,11 +188,9 @@ void DataManager::doInput()
     device.setFreeHeap(hal.heapOccupation());
 
     // ROTARY SWITCHES
-    uint16_t digital;
-#ifdef LINUX_PLATFORM
-    digital = 0;
-#else
-    mcp23x17_port_read(&mcp23x17Dev,&digital);
+    uint16_t digital = 0;
+#ifndef LINUX_PLATFORM
+  //  mcp23x17_port_read(&mcp23x17Dev,&digital);
 #endif
     pumpOnTime.setValue(digital & 0x0F);
     pumpDailyCycles.setValue((digital & 0xF0) >> 4);

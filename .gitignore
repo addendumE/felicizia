@@ -1,5 +1,5 @@
 /build/
-/pcbuild/
+/linuxbuild/
 /managed_components/
 .cproject
 .project

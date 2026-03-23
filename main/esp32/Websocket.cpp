@@ -10,23 +10,8 @@
 #define TAG "WS"
 
 Websocket::Websocket():
-#ifdef LINUX_PLATFORM
-	Thread("WS"),
-	context(NULL)
-#else
 	Thread("WS")
-#endif
-
 {
-#ifdef LINUX_PLATFORM
-	memset(&protocols, 0, sizeof(protocols));
-	protocols[0].name="http";
-	protocols[0].callback = lws_callback_http_dummy;
-	protocols[1].name="ws";
-	protocols[1].callback = callback_protocol;
-	protocols[1].user = this;
-	protocols[1].rx_buffer_size = RX_BUFFER_BYTES;
-#else
 	server = NULL;
     memset(&ws_uri, 0, sizeof(httpd_uri_t));
     memset(&index_uri, 0, sizeof(httpd_uri_t));
@@ -50,7 +35,6 @@ Websocket::Websocket():
 	ota_uri.handler   = callback_http_upload;
 	ota_uri.user_ctx  = this;
 	ota_uri.is_websocket = false;
-#endif
 }
 
 Websocket::~Websocket() {
@@ -58,38 +42,6 @@ Websocket::~Websocket() {
 
 void Websocket::start(int port)
 {
-	 //lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_DEBUG, NULL);
-#ifdef LINUX_PLATFORM
- static const struct lws_http_mount mount = {
-        .mount_next = NULL,
-        .mountpoint = "/",              // URL path
-        .origin = "./HTML",              // cartella locale
-        .def = "index.html",            // file default
-        .protocol = NULL,
-        .cgienv = NULL,
-        .extra_mimetypes = NULL,
-        .interpret = NULL,
-        .cgi_timeout = 0,
-        .cache_max_age = 0,
-        .auth_mask = 0,
-        .cache_reusable = 0,
-        .cache_revalidate = 0,
-        .cache_intermediaries = 0,
-        .origin_protocol = LWSMPRO_FILE, // serve da filesystem
-        .mountpoint_len = 1,
-        .basic_auth_login_file = NULL,
-    };
-
-	memset( &info, 0, sizeof(info) );
-
-	info.port = 8080;
-	info.protocols = protocols;
-	info.mounts = &mount;
-	context = lws_create_context( &info );
-    lwsl_user("Server avviato su http://localhost:8080\n");
-
-	Thread::start();
-#else
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 	config.uri_match_fn = httpd_uri_match_wildcard;  // Abilita wildcard
 	config.server_port = port;
@@ -103,102 +55,35 @@ void Websocket::start(int port)
 	    httpd_register_uri_handler(server, &index_uri);
 
 	}
-#endif
 }
 
 
 
 void Websocket::loop()
 {
-#ifdef LINUX_PLATFORM
-	while(true)
-	{
-		lws_service( context, 1000);
-	}
-#endif
+	msleep(1000);
 }
-
-//void Websocket::onMessage(std::function <void(string)> f)
-//{
-//	onMessageNotify = f;
-//}
 
 void Websocket::send(string s)
 {
 	Lock::take();
-	if (clients.size() > 0 && txMessages.size()<10)
+	if (clients.size() > 0)
 	{
-		txMessages.push_back(s);
-	#ifdef LINUX_PLATFORM
-		lws_callback_on_writable_all_protocol(context, &protocols[1]);
-	#else
+		if (txMessages.size()<10)
+		{
+			txMessages.push_back(s);
+		}
+		Lock::give();
 		trigger_aync_send();
-	#endif
 	}
-	Lock::give();
+	else
+	{
+		Lock::give();
+		ESP_LOGW(TAG,"send aborted %d",txMessages.size());
+	}
+	
 }
 
-
-#ifdef LINUX_PLATFORM
-int Websocket::callback_protocol( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )
-{
-	static string txBuffer="";
-	int txLen;
-	lws_write_protocol write_mode;
-	bool is_start=false;
-	Websocket * me = (Websocket *) lws_get_protocol(wsi)->user;
-	switch( reason ) {
-			case LWS_CALLBACK_CLOSED:
-				ESP_LOGI(TAG,"CLOSED %p",wsi);
-				me->take();
-				me->clients.remove(wsi);
-				me->give();
-				break;
-			case LWS_CALLBACK_ESTABLISHED:
-				ESP_LOGI(TAG,"ESTABLSHED %p",wsi);
-				me->take();
-				me->clients.push_back(wsi);
-				me->give();
-				break;
-		case LWS_CALLBACK_RECEIVE:
-			me->rxBuffer += string((char*)in,len);
-			if (lws_is_final_fragment(wsi))
-			{
-				me->onMessage(me->rxBuffer);
-				me->rxBuffer="";
-			}
-			break;
-
-		case LWS_CALLBACK_SERVER_WRITEABLE:
-			if (txBuffer.size()==0 && me->txMessages.size()>0)
-			{
-				txBuffer = me->txMessages.back();
-				me->txMessages.pop_back();
-				is_start = true;
-			}
-			txLen = txBuffer.size();
-			if (txLen >0)
-			{
-				if (txLen > RX_BUFFER_BYTES) {
-					txLen = RX_BUFFER_BYTES;
-				}
-				memcpy( &me->txData[LWS_SEND_BUFFER_PRE_PADDING], txBuffer.c_str(),txLen  );
-
-				write_mode = (lws_write_protocol)lws_write_ws_flags(LWS_WRITE_TEXT,is_start,txBuffer.size()<=RX_BUFFER_BYTES);
-				lws_write( wsi, &me->txData[LWS_SEND_BUFFER_PRE_PADDING], txLen, write_mode );
-				txBuffer = txBuffer.substr(txLen);
-				txLen = txBuffer.size();
-				if (txLen) {
-					lws_callback_on_writable_all_protocol( lws_get_context( wsi ), lws_get_protocol( wsi ) );
-				}
-			}
-			break;
-		default:
-			break;
-	}
-	return 0;
-}
-#else
 void Websocket::trigger_aync_send()
 {
 	for (auto c:clients)
@@ -319,31 +204,7 @@ esp_err_t Websocket::callback_protocol(httpd_req_t *req)
 	//}
 	return ret;
 }
-#endif
 
-#ifdef LINUX_PLATFORM
-#if 0
-int Websocket::callback_http( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )
-{
-	const char * mime;
-	//const char * file = (const char *) in;
-	string file;
-	switch( reason )
-	{
-		case LWS_CALLBACK_HTTP:
-			file = "./HTML"+string((const char *)in);
-			ESP_LOGI(TAG,"serving: %s",file.c_str());
-			mime = lws_get_mimetype(file.c_str(),NULL);
-			lws_serve_http_file( wsi, file.c_str(), mime, NULL, 0 );
-			break;
-		default:
-			break;
-	}
-
-	return 0;
-}
-#endif
-#else
 esp_err_t Websocket::callback_http(httpd_req_t *req)
 {
     struct fs_file file;
@@ -461,4 +322,3 @@ esp_err_t Websocket::start_ota(void)
     ESP_LOGI(TAG, "esp_ota_begin succeeded");
     return ESP_OK;
 }
-#endif

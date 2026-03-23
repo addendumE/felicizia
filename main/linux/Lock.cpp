@@ -4,7 +4,7 @@
 Lock::Lock() {
 	pthread_mutexattr_t Attr;
 	pthread_mutexattr_init(&Attr);
-	//pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init(&plock, &Attr);
 }
 

@@ -12,7 +12,7 @@ project(example_project)
 # these instructions search the directory tree when CMake is
 # invoked and put all files that match the pattern in the variables
 # `sources` and `data`
-file(GLOB_RECURSE sources      ../main/components/*.cpp ../main/components/objects/*.cpp ../main/linux/*.cpp ../main/Websocket.cpp ../main/ThingSpeak.cpp ../main/MainApp.cpp)
+file(GLOB_RECURSE sources      ../main/components/*.cpp ../main/components/objects/*.cpp ../main/linux/*.cpp ../main/ThingSpeak.cpp ../main/MainApp.cpp)
 # you can use set(sources src/main.cpp) etc if you don't want to
 # use globbing to find files automatically
 
