@@ -31,6 +31,14 @@
 			<table  data-role="table" data-filter="true" data-input="#filterBasic-input" data-mode="reflow" class="ui-responsive table-stroke" >
 				<tbody id="mainList">
 				</tbody>
+				<thead>
+        			<tr>
+            			<th onclick="sortTable(0)">Tipo</th>
+            			<th onclick="sortTable(1)">Nome</th>
+						<th>Attr</th>
+						<th>Valore</th>
+        			</tr>
+    			</thead>
 			</table >
 		</div>
 	</div>
@@ -66,6 +74,18 @@
 <script>
 	var wsocket;
 	var ping;
+	function sortTable(colIndex) {
+    var table = document.querySelector("table tbody");
+    var rows = Array.from(table.rows);
+
+    rows.sort(function(a, b) {
+        var A = a.cells[colIndex].innerText;
+        var B = b.cells[colIndex].innerText;
+        return A.localeCompare(B, undefined, {numeric: true});
+    });
+
+    rows.forEach(row => table.appendChild(row));
+}
 	function wsConnect()
 	{
 		wsocket = new WebSocket("ws://"+location.host,"ws");
