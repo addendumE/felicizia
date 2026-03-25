@@ -299,12 +299,12 @@ T Base::getPropertyValue(PropertyId p, bool &found)
 }
 
 
-string Base::getPropertyValueString(PropertyId p)
+string Base::getPropertyValueString(PropertyId p, bool raw)
 {
 	string ret;
 	if (propertyList.count(p) > 0)
 	{
-		ret = propertyList[p]->toString();
+		ret = propertyList[p]->toString(raw);
 	}
 	else
 	{

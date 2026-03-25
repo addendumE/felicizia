@@ -14,6 +14,8 @@ public:
 	cJSON * getObjectList();
 	cJSON * getObjectTypes();
 	cJSON * getObject(string);
+	void getConf(string &);
+	bool setConf(string &);
 	Property *getPropertyPtr(Base * obj,string propId);
 	Base *getObjectPtr(string id);
 	Property *getPropertyPtr(string objId,PropertyId propId)

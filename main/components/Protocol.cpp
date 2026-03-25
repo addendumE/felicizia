@@ -134,12 +134,6 @@ void Protocol::onMessage(const string &msg)
 	cJSON_Delete(jResp);
 
 }
-void Protocol::onOTAenter()
-{
-}
-void Protocol::onOTAexit()
-{
-}
 
 Protocol::handleResult Protocol::handleObjList(cJSON *jReq,cJSON **jResp)
 {

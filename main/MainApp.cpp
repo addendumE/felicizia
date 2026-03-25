@@ -12,7 +12,7 @@ MainApp::MainApp():
 	reboot("reb", 1000),
 	nvs("APP",NVS_READWRITE),
 	objManager(new (ObjManager)),
-	protocol(new Protocol(*objManager)),
+	protocol(new MyProtocol(*objManager)),
 	persistance(new MyPersistence(*protocol,*objManager,nvs,ts)),
 	dataManager(new DataManager(*objManager,*persistance,hal))
 {
@@ -56,6 +56,8 @@ void MainApp::start()
 	}
 	ESP_LOGI(TAG,"starting WEB server");
 	protocol->start(80);
+	string s;
+	objManager->getConf(s);
 }
 
 

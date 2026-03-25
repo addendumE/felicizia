@@ -40,7 +40,7 @@ public:
 
 	virtual auto get() -> void* = 0;;
 	virtual SetResult set(void *) = 0;
-	virtual string toString() = 0;
+	virtual string toString(bool raw = false) = 0;
 	ValueType getType(){return type;};
 	bool getPersistance(){return mode == MODE_WRITABLE_PERSISTENT;};
 	bool getWritable() {return mode != MODE_READONLY;};
@@ -64,7 +64,7 @@ public:
 		return new std::string(value);
 	}
 
-	string toString() override {
+	string toString(bool raw) override {
 			return value;
 	}
 
@@ -104,11 +104,17 @@ public:
 		return new float(value);
 	}
 
-	string toString() override {
+	string toString(bool raw) override {
 		std::ostringstream oss;
-		oss << std::fixed << std::setprecision(decimals) << value;
-		string ret = oss.str();
-		return ret+" "+unitNames.at(unit);
+		if (raw)
+		{
+			oss << value;
+		}
+		else
+		{
+			oss << std::fixed << std::setprecision(decimals) << value<< " " << unitNames.at(unit);
+		}
+		return oss.str();
 	}
 
 	SetResult set(void* _value) override {
@@ -146,7 +152,7 @@ public:
 			return new int(value);
 	}
 
-	string toString() override {
+	string toString(bool raw) override {
 		return to_string(value);
 	}
 
@@ -186,8 +192,11 @@ public:
 		return new bool(value);
 	}
 
-	string toString() override {
-		return (value) ? trues:falses;
+	string toString(bool raw) override {
+		if (raw)
+			return (value) ? "1":"0";
+		else
+			return (value) ? trues:falses;
 	}
 
 	SetResult set(void* _value) override {
@@ -230,8 +239,11 @@ public:
 		return new int(value);
 	}
 
-	string toString() override {
-		return strings.at(value);
+	string toString(bool raw) override {
+		if (raw)
+			return(to_string(value));
+		else
+			return strings.at(value);
 	}
 	vector <string> & getStrings() {return strings;}
 

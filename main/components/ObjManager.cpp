@@ -16,6 +16,65 @@ ObjManager::ObjManager() {
 ObjManager::~ObjManager() {
 }
 
+
+void ObjManager::getConf(string &s)
+{
+	cJSON *jOut = cJSON_CreateArray();
+	for (auto iobj:objects)
+	{
+		map <PropertyId,Property *> properties = iobj.second->getProperties();
+		for (auto iprop:properties)
+		{
+			if (iprop.second->getPersistance())
+			{
+				cJSON *jItem = cJSON_CreateObject();
+				cJSON_AddStringToObject(jItem, "obj", iobj.second->getId().c_str());
+				cJSON_AddStringToObject(jItem, "prop", propertyNames.at(iprop.first).c_str());
+				cJSON_AddStringToObject(jItem, "value",iobj.second->getPropertyValueString(iprop.first,true).c_str());
+				cJSON_AddItemToArray(jOut,jItem);
+			}
+		}
+	}
+	char *txt = cJSON_Print(jOut);
+	ESP_LOGI(TAG,"CONFIGURATION: %s",txt);
+	free(txt);
+	cJSON_Delete(jOut);
+}
+bool ObjManager::setConf(string &s)
+{
+	bool ret = true;
+	cJSON *jObj = cJSON_Parse(s.c_str());
+	if (jObj == NULL)
+	{
+		const char *error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL)
+		{
+			fprintf(stderr, "Error before: %s\n", error_ptr);
+		}
+		ret = false;
+	}
+	else
+	{
+		int size = cJSON_GetArraySize(jObj);
+    	for (int i = 0; i < size; i++) {
+        	cJSON *item = cJSON_GetArrayItem(jObj, i);
+			cJSON *jTmp = cJSON_GetObjectItem(item,"obj");
+			string objId = cJSON_GetStringValue(jTmp);
+			jTmp = cJSON_GetObjectItem(item,"prop");
+			string propId = cJSON_GetStringValue(jTmp);
+			jTmp = cJSON_GetObjectItem(item,"value");
+			string value = cJSON_GetStringValue(jTmp);
+			Base *o = objects.at(objId);
+			if (o) {
+				Property::SetResult setRes = o->setProperyValueFromString(propId,value);
+			}
+
+		}
+        	cJSON_Delete(jObj);
+
+	}
+	return true;
+}
 bool ObjManager::addObject(Base *obj)
 {
 	objects[obj->getId()] = obj;

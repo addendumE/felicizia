@@ -48,12 +48,20 @@
 			<div data-role="navbar">
 				<ul>
 					<li><a href="#Main" data-icon="home">Home</a></li>
-					<li><a href="#Map" data-icon="grid">Pagina 2</a></li>
-					<li><a href="#Fup" data-icon="info" class="ui-btn-active">Info</a></li>
+					<li><a href="#Fup" class="ui-btn-active" data-icon="grid">Manutenzione</a></li>
 				</ul>
 			</div>
 		</div>
-		<div data-role="content"> <h2>Home</h2> <p>Questa è la terza pagina.</p> </div>
+		<div data-role="content">
+			<h2>Manutenzione</h2>
+			 <form>
+            	<label for="fileInput2">Firmware upload</label>
+            	<input type="file" accept=".bin" data-clear-btn="true" name="fileInput2" id="fileInput2" value=""/>
+				<label for="fileInput2">Config upload</label>
+            	<input type="file" accept=".conf" data-clear-btn="true" name="fileInput2" id="fileInput2" value=""/>
+				<a href="/api/felicizia.conf"data-role="button"  data-inline="true" data-ajax="false" download data-role="button" data-inline="true">download</a>
+        	</form>
+		</div>
 	</div>
 	<div data-role="page" id="Disconnected"> <!-- disconnected page -->
 		<div data-role="content" id="connStatus"></div>
@@ -95,7 +103,7 @@
 			$.mobile.changePage("#Main");
 			ping = window.setInterval(function(){
 	 			sendRequest("ping");	
- 				},500);
+ 				},5000);
 			sendRequest("getObjectList","getObjectList");
 		})
 		wsocket.addEventListener("message", function (event) {
@@ -142,6 +150,7 @@
   		});
 	});
 	function sendRequest(_id, _cmd, _data=null) {
+	console.log(JSON.stringify({id:_id,cmd:_cmd,data:_data}))
 		wsocket.send(JSON.stringify({id:_id,cmd:_cmd,data:_data}))
 	}
 	function propertyContent(id,prop,data) {

@@ -20,8 +20,6 @@ private:
 	};
 	ObjManager &om;
 	void onMessage(const string&);
-	void onOTAenter();
-	void onOTAexit();
 	handleResult handleObjList(cJSON *jReq,cJSON **jResp);
 	handleResult handleObjTypes(cJSON *jReq,cJSON **jResp);
 	handleResult handleObj(cJSON *jReq,cJSON **jResp);
