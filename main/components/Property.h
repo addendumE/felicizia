@@ -194,7 +194,7 @@ public:
 
 	string toString(bool raw) override {
 		if (raw)
-			return (value) ? "1":"0";
+			return (value) ? "true":"false";
 		else
 			return (value) ? trues:falses;
 	}

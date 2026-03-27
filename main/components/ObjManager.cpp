@@ -19,29 +19,31 @@ ObjManager::~ObjManager() {
 
 void ObjManager::getConf(string &s)
 {
-	cJSON *jOut = cJSON_CreateArray();
+	cJSON *jOut = cJSON_CreateObject();
 	for (auto iobj:objects)
 	{
 		map <PropertyId,Property *> properties = iobj.second->getProperties();
+		cJSON *jProperties = cJSON_CreateObject();
+		cJSON_AddItemToObject(jOut, iobj.second->getId().c_str(), jProperties);
 		for (auto iprop:properties)
 		{
+			
 			if (iprop.second->getPersistance())
 			{
-				cJSON *jItem = cJSON_CreateObject();
-				cJSON_AddStringToObject(jItem, "obj", iobj.second->getId().c_str());
-				cJSON_AddStringToObject(jItem, "prop", propertyNames.at(iprop.first).c_str());
-				cJSON_AddStringToObject(jItem, "value",iobj.second->getPropertyValueString(iprop.first,true).c_str());
-				cJSON_AddItemToArray(jOut,jItem);
+				cJSON *jProp= cJSON_CreateString(iobj.second->getPropertyValueString(iprop.first,true).c_str());
+				cJSON_AddItemToObject(jProperties, propertyNames.at(iprop.first).c_str(), jProp);
 			}
 		}
 	}
 	char *txt = cJSON_Print(jOut);
-	ESP_LOGI(TAG,"CONFIGURATION: %s",txt);
+	//ESP_LOGI(TAG,"CONFIGURATION: %s",txt);
+	s=string(txt);
 	free(txt);
 	cJSON_Delete(jOut);
 }
 bool ObjManager::setConf(string &s)
 {
+	ESP_LOGI(TAG,"#%s#",s.c_str());
 	bool ret = true;
 	cJSON *jObj = cJSON_Parse(s.c_str());
 	if (jObj == NULL)
@@ -55,24 +57,31 @@ bool ObjManager::setConf(string &s)
 	}
 	else
 	{
-		int size = cJSON_GetArraySize(jObj);
-    	for (int i = 0; i < size; i++) {
-        	cJSON *item = cJSON_GetArrayItem(jObj, i);
-			cJSON *jTmp = cJSON_GetObjectItem(item,"obj");
-			string objId = cJSON_GetStringValue(jTmp);
-			jTmp = cJSON_GetObjectItem(item,"prop");
-			string propId = cJSON_GetStringValue(jTmp);
-			jTmp = cJSON_GetObjectItem(item,"value");
-			string value = cJSON_GetStringValue(jTmp);
-			Base *o = objects.at(objId);
+		cJSON *jItem = jObj->child;
+		while (jItem) {
+			printf("key: %s\n", jItem->string);
+		   	cJSON *jProperty = jItem->child;
+			string sObj=string(jItem->string);
+			Base *o = objects.at(sObj);
 			if (o) {
-				Property::SetResult setRes = o->setProperyValueFromString(propId,value);
+				while(jProperty)
+				{
+					
+					string sProp=string(jProperty->string);
+					string sVal=string(jProperty->valuestring);
+					Property::SetResult setRes = o->setProperyValueFromString(sProp,sVal);
+					printf("property: %s -> %s -> %d\n", jProperty->string,jProperty->valuestring,setRes);
+					jProperty = jProperty->next;
+				}
 			}
-
+    		//printf("value: %d\n", jItem->valueint);
+    		jItem = jItem->next;
 		}
-        	cJSON_Delete(jObj);
+			
 
 	}
+     	cJSON_Delete(jObj);
+
 	return true;
 }
 bool ObjManager::addObject(Base *obj)

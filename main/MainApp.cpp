@@ -56,8 +56,6 @@ void MainApp::start()
 	}
 	ESP_LOGI(TAG,"starting WEB server");
 	protocol->start(80);
-	string s;
-	objManager->getConf(s);
 }
 
 

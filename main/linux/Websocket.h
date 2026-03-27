@@ -36,8 +36,9 @@ public:
 private:
 
 struct my_post_buffer {
-    char data[4096];
+    char data[16384];
     size_t len = 0;
+	char uri[64];
 };
 
 	vector <string> txMessages;

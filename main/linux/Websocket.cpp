@@ -162,16 +162,45 @@ int Websocket::callback_api(struct lws *wsi, enum lws_callback_reasons reason,
                         void *user, void *in, size_t len)
 {
     struct my_post_buffer *buf = (my_post_buffer *)user;
+	Websocket * me = (Websocket *) lws_get_protocol(wsi)->user;
 
     switch (reason) {
-
     case LWS_CALLBACK_HTTP: {
         const char *uri = (const char *)in;
-		printf("************* %s *************\n",uri);
-        if (strcmp(uri, "/felicizia.conf") == 0) {
-            const char *msg = "Hello API!";
-            lws_return_http_status(wsi, HTTP_STATUS_OK, msg);
-            return -1;
+		strcpy(buf->uri,uri);
+ 		if (strcmp(buf->uri,"/readConf") == 0) {
+        	// Buffer per risposta
+        	unsigned char buffer[LWS_PRE + 1024];
+        	unsigned char *p = &buffer[LWS_PRE];
+        	unsigned char *start = p;
+        	unsigned char *end = buffer + sizeof(buffer);
+        	string body;
+			me->onConfigRead(body);
+        	ESP_LOGI(TAG,"get conf: size is: %d",body.size());
+        	// Header HTTP
+        	lws_add_http_header_status(wsi, 200, &p, end);
+        	lws_add_http_header_content_length(wsi, body.size(), &p, end);
+        	lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE,
+                                        (unsigned char *)"text/plain",
+                                        10, &p, end);
+			lws_add_http_header_by_name(wsi,
+        		(unsigned char *)"Content-Disposition:",
+        		(unsigned char *)"attachment; filename=\"config.conf\"",
+        		34, &p, end);
+
+
+	        lws_finalize_http_header(wsi, &p, end);
+	
+    	    // Scrivi header
+        	if (lws_write(wsi, start, p - start, LWS_WRITE_HTTP_HEADERS) < 0)
+            	return -1;
+
+        	// Scrivi body
+        	if (lws_write(wsi, (unsigned char *)body.c_str(),
+                      body.size(), LWS_WRITE_HTTP_FINAL) < 0)
+            	return -1;
+	        	ESP_LOGI(TAG,"get conf: done");
+			return -1;
         }
 
         break;
@@ -180,14 +209,17 @@ int Websocket::callback_api(struct lws *wsi, enum lws_callback_reasons reason,
     case LWS_CALLBACK_HTTP_BODY:
         memcpy(buf->data + buf->len, in, len);
         buf->len += len;
+       	return 0;
         break;
 
     case LWS_CALLBACK_HTTP_BODY_COMPLETION: {
         // body Post completo
-        printf("POST /api body: %.*s\n", (int)buf->len, buf->data);
-
-        const char *reply = "POST OK\n";
-        lws_write_http(wsi, (unsigned char*)reply, strlen(reply));
+		if (strcmp(buf->uri,"/writeConf") == 0)
+		{
+			string s = string((char*)buf->data,buf->len);
+			me->onConfigWrite(s);
+			lws_return_http_status(wsi, HTTP_STATUS_OK, NULL);
+		}
         return -1;
     }
 

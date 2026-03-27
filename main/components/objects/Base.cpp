@@ -336,12 +336,10 @@ Property::SetResult Base::setProperyValueFromString(string propId, string value)
 				case VALUE_TYPE_BOOL:
 					if (value=="true")
 					{
-						ESP_LOGI(TAG,"Write true");
 						retVal = setPropertyValue<bool>(pId,true);
 					}
 					else
 					{
-						ESP_LOGI(TAG,"Write false");
 						retVal = setPropertyValue<bool>(pId,false);
 					}
 					break;
