@@ -41,6 +41,8 @@ public:
 	virtual void onMessage(const string&) = 0;
 	virtual void onOTAenter() = 0;
 	virtual void onOTAexit() = 0;
+	virtual void onConfigRead(string &s) = 0;
+	virtual bool onConfigWrite(string&s) = 0;
 	void loop();
 	void send(string);
 private:
@@ -55,6 +57,8 @@ private:
 	static void ws_async_send(void * arg);
 	static esp_err_t callback_http(httpd_req_t *req);
 	static esp_err_t callback_http_upload(httpd_req_t *req);
+	static esp_err_t callback_http_readConf(httpd_req_t *req);
+	static esp_err_t callback_http_writeConf(httpd_req_t *req);
 	static esp_err_t callback_protocol(httpd_req_t *req);
 
 	esp_err_t start_ota();
@@ -62,6 +66,8 @@ private:
 	httpd_uri_t ws_uri;
 	httpd_uri_t index_uri;
 	httpd_uri_t ota_uri;
+	httpd_uri_t readConf_uri;
+	httpd_uri_t writeConf_uri;
 	esp_ota_handle_t update_handle;
 	const esp_partition_t *update_partition;
 	list <ws_client_id> clients;

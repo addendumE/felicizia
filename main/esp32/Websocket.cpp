@@ -16,6 +16,8 @@ Websocket::Websocket():
     memset(&ws_uri, 0, sizeof(httpd_uri_t));
     memset(&index_uri, 0, sizeof(httpd_uri_t));
     memset(&ota_uri, 0, sizeof(httpd_uri_t));
+    memset(&readConf_uri, 0, sizeof(httpd_uri_t));
+    memset(&writeconf_uri, 0, sizeof(httpd_uri_t));
 
 	ws_uri.uri = "/";
 	ws_uri.method     = HTTP_GET;
@@ -30,11 +32,23 @@ Websocket::Websocket():
 	index_uri.user_ctx  = this;
 	index_uri.is_websocket = false;
 
-	ota_uri.uri       = "/update";
+	ota_uri.uri       = "/api/update";
 	ota_uri.method    = HTTP_POST;
 	ota_uri.handler   = callback_http_upload;
 	ota_uri.user_ctx  = this;
 	ota_uri.is_websocket = false;
+
+	writeConf_uri.uri       = "/api/writeConf";
+	writeConf_uri.method    = HTTP_POST;
+	writeConf_uri.handler   = callback_http_writeConf;
+	writeConf_uri.user_ctx  = this;
+	writeConf_uri.is_websocket = false;
+
+	readConf_uri.uri       = "/api/readConf";
+	readConf_uri.method    = HTTP_GET;
+	readConf_uri.handler   = callback_http_readConf;
+	readConf_uri.user_ctx  = this;
+	readConf_uri.is_websocket = false;
 }
 
 Websocket::~Websocket() {
@@ -52,7 +66,11 @@ void Websocket::start(int port)
 	    ESP_LOGI(TAG, "Registering URI handlers");
 	    httpd_register_uri_handler(server, &ota_uri);
 		httpd_register_uri_handler(server, &ws_uri);
+		httpd_register_uri_handler(server, &readConf_uri);
+		httpd_register_uri_handler(server, &writeConf_uri);
 	    httpd_register_uri_handler(server, &index_uri);
+
+
 
 	}
 }
@@ -283,6 +301,23 @@ esp_err_t Websocket::callback_http_upload(httpd_req_t *req)
 	 }
     httpd_resp_sendstr(req, "Fw upgrade success");
     me.onOTAexit();
+    return ESP_OK;
+}
+
+esp_err_t Websocket::callback_http_readConf(httpd_req_t *req)
+{
+	Websocket &me = *(Websocket*) req->user_ctx;
+    return ESP_OK;
+}
+
+esp_err_t Websocket::callback_http_writeConf(httpd_req_t *req)
+{
+	 Websocket &me = *(Websocket*) req->user_ctx;
+	 int total_len = req->content_len;
+	 char *tmp = (char*)malloc(total_len);
+	 int received = httpd_req_recv(req, tmp, total_len);
+	 free (tmp);
+    httpd_resp_sendstr(req, "conf written");
     return ESP_OK;
 }
 

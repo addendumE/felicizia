@@ -149,7 +149,7 @@ bool DataManager::adcRead(ads111x_mux_t mux, float &res)
         vTaskDelay(10);
     }
     int16_t val = 0;
-   // ads111x_get_value(&ads11xDev, &val);
+    ads111x_get_value(&ads11xDev, &val);
     res = val*4096.0f/32760.0f;
     return ret;
 #endif
