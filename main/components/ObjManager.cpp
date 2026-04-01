@@ -16,6 +16,74 @@ ObjManager::ObjManager() {
 ObjManager::~ObjManager() {
 }
 
+
+void ObjManager::getConf(string &s)
+{
+	cJSON *jOut = cJSON_CreateObject();
+	for (auto iobj:objects)
+	{
+		map <PropertyId,Property *> properties = iobj.second->getProperties();
+		cJSON *jProperties = cJSON_CreateObject();
+		cJSON_AddItemToObject(jOut, iobj.second->getId().c_str(), jProperties);
+		for (auto iprop:properties)
+		{
+			
+			if (iprop.second->getPersistance())
+			{
+				cJSON *jProp= cJSON_CreateString(iobj.second->getPropertyValueString(iprop.first,true).c_str());
+				cJSON_AddItemToObject(jProperties, propertyNames.at(iprop.first).c_str(), jProp);
+			}
+		}
+	}
+	char *txt = cJSON_Print(jOut);
+	//ESP_LOGI(TAG,"CONFIGURATION: %s",txt);
+	s=string(txt);
+	free(txt);
+	cJSON_Delete(jOut);
+}
+bool ObjManager::setConf(string &s)
+{
+	ESP_LOGI(TAG,"#%s#",s.c_str());
+	bool ret = true;
+	cJSON *jObj = cJSON_Parse(s.c_str());
+	if (jObj == NULL)
+	{
+		const char *error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL)
+		{
+			fprintf(stderr, "Error before: %s\n", error_ptr);
+		}
+		ret = false;
+	}
+	else
+	{
+		cJSON *jItem = jObj->child;
+		while (jItem) {
+			printf("key: %s\n", jItem->string);
+		   	cJSON *jProperty = jItem->child;
+			string sObj=string(jItem->string);
+			Base *o = objects.at(sObj);
+			if (o) {
+				while(jProperty)
+				{
+					
+					string sProp=string(jProperty->string);
+					string sVal=string(jProperty->valuestring);
+					Property::SetResult setRes = o->setProperyValueFromString(sProp,sVal);
+					printf("property: %s -> %s -> %d\n", jProperty->string,jProperty->valuestring,setRes);
+					jProperty = jProperty->next;
+				}
+			}
+    		//printf("value: %d\n", jItem->valueint);
+    		jItem = jItem->next;
+		}
+			
+
+	}
+     	cJSON_Delete(jObj);
+
+	return true;
+}
 bool ObjManager::addObject(Base *obj)
 {
 	objects[obj->getId()] = obj;

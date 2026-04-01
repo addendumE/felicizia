@@ -29,11 +29,11 @@ public:
 
 	string serialize();
 	cJSON * get();
-
+	map <PropertyId,Property *> getProperties() {return propertyList;};
 	string getId() {return id;};
 	template <typename T>
 	T getPropertyValue(PropertyId, bool &);
-	string getPropertyValueString(PropertyId);
+	string getPropertyValueString(PropertyId, bool raw=false);
 	cJSON * getPropertyJson(PropertyId pId);
 	template <typename T>
 	Property::SetResult setPropertyValue(PropertyId p, T val);

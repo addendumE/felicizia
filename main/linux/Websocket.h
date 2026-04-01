@@ -29,9 +29,18 @@ public:
 	virtual void onMessage(const string&) = 0;
 	virtual void onOTAenter() = 0;
 	virtual void onOTAexit() = 0;
+	virtual void onConfigRead(string &s) = 0;
+	virtual bool onConfigWrite(string&s) = 0;
 	void loop();
 	void send(string);
 private:
+
+struct my_post_buffer {
+    char data[16384];
+    size_t len = 0;
+	char uri[64];
+};
+
 	vector <string> txMessages;
 	string rxBuffer;
 	int port;
@@ -40,12 +49,14 @@ private:
 	struct lws_context *context;
 	static int callback_protocol( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len );
 	static int callback_http( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len );
-	struct lws_protocols protocols[3];
+	static int callback_api( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len );
+	struct lws_protocols protocols[4];
 	struct lws_protocol_vhost_options pvo_opt;
 	struct lws_protocol_vhost_options pvo;
 	struct lws_context_creation_info info;
 	typedef struct lws * ws_client_id;
-	struct lws_http_mount mount;
+	struct lws_http_mount mount_files;
+	struct lws_http_mount mount_api;
 	list <ws_client_id> clients;
 };
 

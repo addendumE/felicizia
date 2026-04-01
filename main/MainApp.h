@@ -91,6 +91,23 @@ private:
 };
 
 
+class MyProtocol: public Protocol {
+public:
+	MyProtocol(ObjManager &om):Protocol(om),om(om){};
+	virtual ~MyProtocol(){};
+private:
+	ObjManager &om;
+	void onOTAenter(){};
+	void onOTAexit(){};
+	void onConfigRead(string &s)
+	{
+		om.getConf(s);
+	}
+	bool onConfigWrite(string &s) {
+		return om.setConf(s);
+	}
+};
+
 class MainApp: public WifiManager,  public ThingSpeak {
 public:
 	MainApp();
@@ -102,7 +119,7 @@ private:
 	Nvs nvs;
 	ThingSpeak ts;
 	ObjManager *objManager;
-	Protocol *protocol;
+	MyProtocol *protocol;
 	MyPersistence *persistance;
 	DataManager *dataManager;
 	Hal hal;
