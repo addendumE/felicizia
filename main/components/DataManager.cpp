@@ -70,10 +70,8 @@ ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",p
     om.addObject(&ledSerbatoioVuoto);
     om.addObject(&ledErrorePompaFosso);
     om.addObject(&ledErrorePompaSerbatoio);
-
-    ow.init(6);   
 #ifndef LINUX_PLATFORM    
-    /*mcp23x17Dev.port = I2C_NUM_0;
+   /* mcp23x17Dev.port = I2C_NUM_0;
     mcp23x17Dev.addr = MCP23X17_ADDR_BASE;
     mcp23x17Dev.cfg.sda_io_num = GPIO_NUM_6;
     mcp23x17Dev.cfg.scl_io_num = GPIO_NUM_7;
@@ -104,6 +102,7 @@ ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",p
         .intr_type = GPIO_INTR_DISABLE
     };
     gpio_config(&io_conf);
+    ow.init(GPIO_NUM_2);
 #endif
     start();
 }
@@ -149,8 +148,9 @@ bool DataManager::adcRead(ads111x_mux_t mux, float &res)
         vTaskDelay(10);
     }
     int16_t val = 0;
-   // ads111x_get_value(&ads11xDev, &val);
+    ads111x_get_value(&ads11xDev, &val);
     res = val*4096.0f/32760.0f;
+    ESP_LOGI(TAG,"MUX:%d val %f",mux,res);
     return ret;
 #endif
 }
@@ -232,7 +232,7 @@ void DataManager::doOutput()
         out |= 0x8000;
     }
 #ifndef LINUX_PLATFORM
-    mcp23x17_port_write(&mcp23x17Dev,out);
+   // mcp23x17_port_write(&mcp23x17Dev,out);
     gpio_set_level(POMPA_SERBATOIO_GPIO,storagePumpCmd.getValue());
     gpio_set_level(POMPA_FOSSO_GPIO,trenchPumpCmd.getValue());
 #endif

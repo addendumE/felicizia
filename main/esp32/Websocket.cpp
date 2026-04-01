@@ -213,9 +213,7 @@ esp_err_t Websocket::callback_http(httpd_req_t *req)
     if (strcmp(uri, "/") == 0) {
         uri = "/index.html";
     }
-	ESP_LOGI(TAG,"opening %s",uri);
     int err = fs_open(&file,uri);
-	ESP_LOGI(TAG,"open result %d",err);
     if(!err) {
 		 // Determina il Content-Type dal file
         const char *content_type = "text/html";
