@@ -17,7 +17,7 @@ Websocket::Websocket():
     memset(&index_uri, 0, sizeof(httpd_uri_t));
     memset(&ota_uri, 0, sizeof(httpd_uri_t));
     memset(&readConf_uri, 0, sizeof(httpd_uri_t));
-    memset(&writeconf_uri, 0, sizeof(httpd_uri_t));
+    memset(&writeConf_uri, 0, sizeof(httpd_uri_t));
 
 	ws_uri.uri = "/";
 	ws_uri.method     = HTTP_GET;
@@ -305,16 +305,33 @@ esp_err_t Websocket::callback_http_upload(httpd_req_t *req)
 esp_err_t Websocket::callback_http_readConf(httpd_req_t *req)
 {
 	Websocket &me = *(Websocket*) req->user_ctx;
+	string tmp;
+	me.onConfigRead(tmp);
+	httpd_resp_set_type(req, "text/plain");
+    httpd_resp_send(req, (char*)tmp.c_str(), HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
 esp_err_t Websocket::callback_http_writeConf(httpd_req_t *req)
 {
-	 Websocket &me = *(Websocket*) req->user_ctx;
-	 int total_len = req->content_len;
-	 char *tmp = (char*)malloc(total_len);
-	 int received = httpd_req_recv(req, tmp, total_len);
-	 free (tmp);
+	Websocket &me = *(Websocket*) req->user_ctx;
+	int total_len = req->content_len;
+ 	std::string body;
+    body.resize(total_len);  // ✅ alloca buffer interno
+    int received = 0;
+    while (received < total_len) {
+        int ret = httpd_req_recv(
+            req,
+            body.data() + received,           // 👈 scrittura diretta
+            total_len - received
+        );
+
+        if (ret <= 0) {
+            return ESP_FAIL;
+        }
+        received += ret;
+    }
+	me.onConfigWrite(body);
     httpd_resp_sendstr(req, "conf written");
     return ESP_OK;
 }
