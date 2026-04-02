@@ -28,6 +28,8 @@
 #include "esp_flash_partitions.h"
 #include "esp_partition.h"
 #include "esp_image_format.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 
 using namespace std;
 
@@ -43,23 +45,27 @@ public:
 	virtual void onOTAexit() = 0;
 	virtual void onConfigRead(string &s) = 0;
 	virtual bool onConfigWrite(string&s) = 0;
-	void loop();
-	void send(string);
+	void send(const string&);
 private:
-	vector <string> txMessages;
-	string rxBuffer;
-	typedef int ws_client_id;
-	struct async_resp_arg {
-		Websocket * ws;
-		ws_client_id client;
+	QueueHandle_t xQueueTx;
+	void loop();
+	struct ws_tx_job_t {
+    	httpd_handle_t httpd;
+    	int client_fd;
+    	httpd_ws_frame_t frm;
 	};
-	void trigger_aync_send();
-	static void ws_async_send(void * arg);
+
+	list <int> clients;
+
+
 	static esp_err_t callback_http(httpd_req_t *req);
 	static esp_err_t callback_http_upload(httpd_req_t *req);
 	static esp_err_t callback_http_readConf(httpd_req_t *req);
 	static esp_err_t callback_http_writeConf(httpd_req_t *req);
 	static esp_err_t callback_protocol(httpd_req_t *req);
+	static void ws_tx_work_cb(void *arg);
+
+	bool ws_enqueue_fragmented_text(const std::string& msg);
 
 	esp_err_t start_ota();
 	httpd_handle_t server;
@@ -70,7 +76,6 @@ private:
 	httpd_uri_t writeConf_uri;
 	esp_ota_handle_t update_handle;
 	const esp_partition_t *update_partition;
-	list <ws_client_id> clients;
 };
 
 #endif /* MAIN_WEBSOCKET_H_ */

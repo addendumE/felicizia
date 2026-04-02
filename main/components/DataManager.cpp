@@ -17,8 +17,8 @@ ads11xDev({}),
 #endif
 persistance(persistance),
 hal(hal),
-storageLevelMeter(1,4),
-//trenchLevelMeter(1,5),
+storageLevelMeter(0,4),
+trenchLevelMeter(1,3),
 device("device","device",persistance),
 vbatt("vbatt","tensione batteria",persistance,UNIT_VOLTAGE,1),
 ppm("ppm","conducibilità",persistance,UNIT_CONDUCTIVITY,1),
@@ -71,7 +71,7 @@ ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",p
     om.addObject(&ledErrorePompaFosso);
     om.addObject(&ledErrorePompaSerbatoio);
 #ifndef LINUX_PLATFORM    
-   /* mcp23x17Dev.port = I2C_NUM_0;
+    mcp23x17Dev.port = I2C_NUM_0;
     mcp23x17Dev.addr = MCP23X17_ADDR_BASE;
     mcp23x17Dev.cfg.sda_io_num = GPIO_NUM_6;
     mcp23x17Dev.cfg.scl_io_num = GPIO_NUM_7;
@@ -80,7 +80,7 @@ ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",p
 
     i2c_dev_create_mutex(&mcp23x17Dev);
     mcp23x17_port_set_mode(&mcp23x17Dev,0x00FF); //port A->IN , portb-> out
-    mcp23x17_port_set_pullup(&mcp23x17Dev,0xFF00);*/
+    mcp23x17_port_set_pullup(&mcp23x17Dev,0xFF00);
 
     ads11xDev.port = I2C_NUM_0;
     ads11xDev.addr = ADS111X_ADDR_GND;
@@ -147,10 +147,16 @@ bool DataManager::adcRead(ads111x_mux_t mux, float &res)
         }
         vTaskDelay(10);
     }
-    int16_t val = 0;
-    ads111x_get_value(&ads11xDev, &val);
-    res = val*4096.0f/32760.0f;
-    ESP_LOGI(TAG,"MUX:%d val %f",mux,res);
+    if (ret)
+    {
+        int16_t val = 0;
+        ads111x_get_value(&ads11xDev, &val);
+        res = val*4096.0f/32760.0f;
+    }
+    else
+    {
+        ESP_LOGW(TAG,"ads11xDev timeout");
+    }
     return ret;
 #endif
 }
@@ -182,7 +188,7 @@ void DataManager::doInput()
     storageLevel.setValue(storageLevelMeter.getMeasure(),storageLevelMeter.getMeasure()>=5.9f);
 
     // TRENCH LEVEL
-   // trenchLevel.setValue(trenchLevelMeter.getMeasure(),trenchLevelMeter.getMeasure()>=5.9f);
+    trenchLevel.setValue(trenchLevelMeter.getMeasure(),trenchLevelMeter.getMeasure()>=5.9f);
 
     // DEVICE
     device.setFreeHeap(hal.heapOccupation());
@@ -190,10 +196,10 @@ void DataManager::doInput()
     // ROTARY SWITCHES
     uint16_t digital = 0;
 #ifndef LINUX_PLATFORM
-  //  mcp23x17_port_read(&mcp23x17Dev,&digital);
+    mcp23x17_port_read(&mcp23x17Dev,&digital);
 #endif
     pumpOnTime.setValue(digital & 0x0F);
-    pumpDailyCycles.setValue((digital & 0xF0) >> 4);
+    pumpDailyCycles.setValue((digital >> 4)& 0x0F);
 }
 
 void DataManager::doOutput()
@@ -232,7 +238,7 @@ void DataManager::doOutput()
         out |= 0x8000;
     }
 #ifndef LINUX_PLATFORM
-   // mcp23x17_port_write(&mcp23x17Dev,out);
+    mcp23x17_port_write(&mcp23x17Dev,out);
     gpio_set_level(POMPA_SERBATOIO_GPIO,storagePumpCmd.getValue());
     gpio_set_level(POMPA_FOSSO_GPIO,trenchPumpCmd.getValue());
 #endif

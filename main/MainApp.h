@@ -32,7 +32,7 @@ public:
 		id += "_"+to_string(p);
 		string s;
 		bool ret = nvs.getString(id,s);
-		value = atof(s.c_str());
+		if (ret) value = atof(s.c_str());
 		return ret;
 	}
 	bool loadInt(string id, PropertyId p, int &value)
@@ -40,7 +40,7 @@ public:
 		id += "_"+to_string(p);
 		string s;
 		bool ret = nvs.getString(id,s);
-		value = atoi(s.c_str());
+		if (ret) value = atoi(s.c_str());
 		return ret;
 	}
 	bool loadBool(string id, PropertyId p, bool &value)
@@ -48,16 +48,19 @@ public:
 		id += "_"+to_string(p);
 		string s;
 		bool ret = nvs.getString(id,s);
-		if (ret)
-			value =  (s=="1");
-		else
-			value = false;
+		if (ret) value =  (s=="1");
 		return ret;
 	}
 	bool loadString(string id, PropertyId p, string &value)
 	{
 		id += "_"+to_string(p);
-		return nvs.getString(id,value);
+		string s;
+		bool ret = nvs.getString(id,s);
+		if (ret)
+		{
+			value = s;
+		}
+		return ret;
 	}
 	bool storeFloat(string id, PropertyId p, float value)
 	{

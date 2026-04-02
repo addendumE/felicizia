@@ -129,7 +129,7 @@ void Protocol::onMessage(const string &msg)
 	cJSON_Delete(jReq);
 	char *txt = cJSON_Print(jResp);
 	Websocket::send(txt);
-	ESP_LOGI(TAG,"RESPONSE: %s",txt);
+	//ESP_LOGI(TAG,"RESPONSE: %s",txt);
 	free(txt);
 	cJSON_Delete(jResp);
 

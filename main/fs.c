@@ -72,7 +72,6 @@ fs_open(struct fs_file *file, const char *name)
 #endif /* LWIP_HTTPD_CUSTOM_FILES */
 
   for (f = FS_ROOT; f != NULL; f = f->next) {
-      printf("%s -> %s \n",name,(const char *)f->name);
     if (!strcmp(name, (const char *)f->name)) {
       file->data = (const char *)f->data;
       file->len = f->len;

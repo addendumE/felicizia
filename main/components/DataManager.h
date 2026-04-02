@@ -45,7 +45,7 @@ private:
     Persistance &persistance;
     Hal &hal;
    	UsRange storageLevelMeter;
-   //	UsRange trenchLevelMeter;
+   	UsRange trenchLevelMeter;
     Device device;
     AnalogInput vbatt;
     AnalogInput ppm;

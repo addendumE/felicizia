@@ -9,6 +9,8 @@
 #include "esp_log.h"
 #define TAG "WS"
 
+
+#define WS_FRAGMENT_SIZE 1024
 Websocket::Websocket():
 	Thread("WS")
 {
@@ -49,6 +51,9 @@ Websocket::Websocket():
 	readConf_uri.handler   = callback_http_readConf;
 	readConf_uri.user_ctx  = this;
 	readConf_uri.is_websocket = false;
+
+	 xQueueTx = xQueueCreate( 1024, sizeof( httpd_ws_frame_t ) );
+
 }
 
 Websocket::~Websocket() {
@@ -69,103 +74,107 @@ void Websocket::start(int port)
 		httpd_register_uri_handler(server, &readConf_uri);
 		httpd_register_uri_handler(server, &writeConf_uri);
 	    httpd_register_uri_handler(server, &index_uri);
-
-
-
+		Thread::start;
 	}
 }
 
 
-
-void Websocket::loop()
+void Websocket::ws_tx_work_cb(void *arg)
 {
-	msleep(1000);
+    ws_tx_job_t *job = static_cast<ws_tx_job_t *>(arg);  
+    httpd_ws_send_frame_async(job->httpd, job->client_fd, &job->frm);
+	free (job->frm.payload);
+	delete job;
 }
 
-void Websocket::send(string s)
+void Websocket::loop()
+{	
+	while (true) {
+       httpd_ws_frame_t frame;
+        if (xQueueReceive(xQueueTx, &frame, portMAX_DELAY)) {
+			for (auto c:clients)
+			{
+				auto *job = new ws_tx_job_t {
+					.httpd    = server,
+					.client_fd = c,
+					.frm      = frame
+				};
+
+	            esp_err_t err = httpd_queue_work(
+    	            server,
+        	        ws_tx_work_cb,
+            	    job
+            	);
+
+            	if (err != ESP_OK) {
+                	// cleanup se httpd è morto
+                	delete job;
+            	}
+        	}
+		}
+    }
+}
+
+
+#define WS_CHUNK_SIZE 1024  // dimensione frammento (puoi adattarla)
+
+bool Websocket::ws_enqueue_fragmented_text(const string &msg)
+{
+    size_t total_len = msg.size();
+    size_t offset = 0;
+    bool first = true;
+
+    while (offset < total_len) {
+        size_t chunk_len = std::min((size_t)WS_CHUNK_SIZE, total_len - offset);
+
+        // alloca payload
+        uint8_t* payload = (uint8_t*)malloc(chunk_len);
+        if (!payload) {
+            return false; // out of memory
+        }
+
+        memcpy(payload, msg.data() + offset, chunk_len);
+
+        // crea frame
+        httpd_ws_frame_t frame = {};
+        frame.payload = payload;
+        frame.len = chunk_len;
+
+        // tipo frame
+        if (first) {
+            frame.type = HTTPD_WS_TYPE_TEXT;
+            first = false;
+        } else {
+            frame.type = HTTPD_WS_TYPE_CONTINUE;
+        }
+
+        // final flag
+        frame.final = (offset + chunk_len) >= total_len;
+        frame.fragmented = !frame.final;  // opzionale ma coerente
+
+        // push in coda
+        if (xQueueSend(xQueueTx, &frame, portMAX_DELAY) != pdTRUE) {
+            free(payload);
+            return false;
+        }
+        offset += chunk_len;
+    }
+    return true;
+}
+
+void Websocket::send(const string &s)
 {
 	Lock::take();
 	if (clients.size() > 0)
 	{
-		if (txMessages.size()<10)
-		{
-			txMessages.push_back(s);
-		}
-		Lock::give();
-		trigger_aync_send();
+		// break string in frames and insert them into the work queue
+		ws_enqueue_fragmented_text(s);
 	}
 	else
 	{
-		Lock::give();
-		ESP_LOGW(TAG,"send aborted %d",txMessages.size());
+		
 	}
-	
-}
-
-void Websocket::trigger_aync_send()
-{
-	for (auto c:clients)
-	{
-	    struct async_resp_arg *resp_arg = (struct async_resp_arg *) malloc(sizeof(struct async_resp_arg));
-		 resp_arg->ws = this;
-		 resp_arg->client = c;
-		 httpd_queue_work(server, ws_async_send, resp_arg);
-	}
-}
-
-void Websocket::ws_async_send(void * arg)
-{
-	static string txBuffer;
-	static bool fragmented;
-    struct async_resp_arg *resp_arg = (struct async_resp_arg *) arg;
-    Websocket * me = resp_arg->ws;
-    httpd_ws_frame_t ws_pkt;
-    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
-    me->take();
-	if (txBuffer.size()==0 && resp_arg->ws->txMessages.size()>0)
-	{
-	    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
-		txBuffer = resp_arg->ws->txMessages.back();
-		resp_arg->ws->txMessages.pop_back();
-		if (txBuffer.size() > RX_BUFFER_BYTES) {
-			fragmented = true;
-		}
-		else
-		{
-			fragmented = false;
-		}
-	}
-	else
-	{
-	    ws_pkt.type = HTTPD_WS_TYPE_CONTINUE;
-	}
-
-	int txLen = txBuffer.size();
-	if (txLen >0)
-	{
-		if (txLen > RX_BUFFER_BYTES) {
-			txLen = RX_BUFFER_BYTES;
-		}
-
-	    ws_pkt.payload = (uint8_t*)txBuffer.c_str(),
-	    ws_pkt.len = txLen;
-	    ws_pkt.final = txBuffer.size()<=RX_BUFFER_BYTES;
-	    ws_pkt.fragmented = fragmented;
-
-	    esp_err_t ret = httpd_ws_send_frame_async(me->server, resp_arg->client, &ws_pkt);
-	    if (ret != ESP_OK)
-	    {
-		    ESP_LOGI(TAG,"client %d disconnected",resp_arg->client);
-		    me->clients.remove(resp_arg->client);
-	    }
-		txBuffer = txBuffer.substr(txLen);
-		if (txBuffer.size()) {
-			me->trigger_aync_send();
-		}
-		free(resp_arg);
-
-	}
-	me->give();
+	Lock::give();
 }
 
 esp_err_t Websocket::callback_protocol(httpd_req_t *req)
@@ -184,43 +193,26 @@ esp_err_t Websocket::callback_protocol(httpd_req_t *req)
 	httpd_ws_frame_t ws_pkt;
 	memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
 	ws_pkt.type = HTTPD_WS_TYPE_TEXT;
-	/* Set max_len = 0 to get the frame len */
 	esp_err_t ret = httpd_ws_recv_frame(req, &ws_pkt, 0);
 	if (ret != ESP_OK) {
 		ESP_LOGE(TAG, "httpd_ws_recv_frame failed to get frame len with %d", ret);
 	    return ret;
 	}
-	if (ws_pkt.len) {
-		uint8_t *buf = NULL;
-		/* ws_pkt.len + 1 is for NULL termination as we are expecting a string */
-	    buf = (uint8_t *) calloc(1, ws_pkt.len + 1);
-	    if (buf == NULL) {
-	    	ESP_LOGE(TAG, "Failed to calloc memory for buf");
-	        return ESP_ERR_NO_MEM;
-	    }
-	    ws_pkt.payload = buf;
-	    /* Set max_len = ws_pkt.len to get the frame payload */
-	    ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
-	  //  if (me->onMessageNotify) {
-	    //	me->onMessageNotify(string((char*)ws_pkt.payload, (size_t)ws_pkt.len));
-	    //}
-	    
-	    ESP_LOGI(TAG, "Got packet with message: %s [%d] frag:%d  final:%d", ws_pkt.payload,
-	    		ws_pkt.len,ws_pkt.fragmented,ws_pkt.final);
-		me->onMessage(string((char*)ws_pkt.payload, (size_t)ws_pkt.len));
-	    free(buf);
-	}
-	
-	//if (ws_pkt.type == HTTPD_WS_TYPE_TEXT && strcmp((char*)ws_pkt.payload,"Trigger async") == 0) {
-	//	free(buf);
-	 //   return trigger_async_send(req->handle, req);
-	//}
 
-	//ret = httpd_ws_send_frame(req, &ws_pkt);
-	//if (ret != ESP_OK) {
-	//	ESP_LOGE(TAG, "httpd_ws_send_frame failed with %d", ret);
-	//}
-	return ret;
+	httpd_ws_frame_t frame = {};
+    ret = httpd_ws_recv_frame(req, &frame, 0);
+    if (ret != ESP_OK) return ret;
+
+    if (frame.len > 0) {
+        uint8_t *tmp = (uint8_t *)malloc(frame.len);
+        frame.payload = tmp;
+        httpd_ws_recv_frame(req, &frame, frame.len);
+		ESP_LOGI(TAG, "Got packet with message: %s [%d] frag:%d  final:%d", ws_pkt.payload,
+	    			ws_pkt.len,ws_pkt.fragmented,ws_pkt.final);
+		me->onMessage(string((char*)ws_pkt.payload, (size_t)ws_pkt.len));
+        free(tmp);
+    }
+    return ESP_OK;
 }
 
 esp_err_t Websocket::callback_http(httpd_req_t *req)
