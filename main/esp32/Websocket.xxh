@@ -1,0 +1,94 @@
+/*
+ * Websocket.h
+ *
+ *  Created on: 1 ott 2021
+ *      Author: maurizio
+ */
+
+#ifndef MAIN_WEBSOCKET_H_
+#define MAIN_WEBSOCKET_H_
+
+#include <string>
+#include <list>
+#include <set>
+#include <functional>
+#include "Thread.h"
+#include "Lock.h"
+#include "esp_system.h"
+#include <esp_wifi.h>
+#include <esp_event.h>
+#include <esp_log.h>
+#include <nvs_flash.h>
+#include <sys/param.h>
+#include "nvs_flash.h"
+#include "esp_netif.h"
+#include <esp_http_server.h>
+#include "lwip/apps/fs.h"
+#include "esp_ota_ops.h"
+#include "esp_flash_partitions.h"
+#include "esp_partition.h"
+#include "esp_image_format.h"
+
+using namespace std;
+
+#define RX_BUFFER_BYTES 8192
+
+class Websocket: public Lock {
+public:
+	Websocket();
+	virtual ~Websocket();
+	void start(int port);
+	virtual void onMessage(const string&) = 0;
+	virtual void onOTAenter() = 0;
+	virtual void onOTAexit() = 0;
+	virtual void onConfigRead(string &s) = 0;
+	virtual bool onConfigWrite(string&s) = 0;
+	//void loop();
+	void send(const std::string &s);
+private:
+
+
+typedef struct {
+    httpd_handle_t server;       // Handle del server HTTP
+    int sockfd;                  // Socket del client WebSocket
+    const uint8_t *data;         // Puntatore al buffer originale
+    size_t offset;               // Offset del chunk da inviare
+    size_t to_send;              // Dimensione del chunk corrente
+    SemaphoreHandle_t done;      // Semaforo per sincronizzazione (invio completato)
+} ws_chunk_ctx_t;
+
+	string rxBuffer;
+	typedef int ws_client_id;
+	struct async_resp_arg {
+		Websocket * ws;
+		ws_client_id client;
+	};
+	//void trigger_aync_send();
+	//static void ws_async_send(void * arg);
+	static esp_err_t callback_http(httpd_req_t *req);
+	static esp_err_t callback_http_upload(httpd_req_t *req);
+	static esp_err_t callback_http_readConf(httpd_req_t *req);
+	static esp_err_t callback_http_writeConf(httpd_req_t *req);
+	static esp_err_t callback_protocol(httpd_req_t *req);
+
+	esp_err_t start_ota();
+	httpd_handle_t server;
+	httpd_uri_t ws_uri;
+	httpd_uri_t index_uri;
+	httpd_uri_t ota_uri;
+	httpd_uri_t readConf_uri;
+	httpd_uri_t writeConf_uri;
+	esp_ota_handle_t update_handle;
+	const esp_partition_t *update_partition;
+	set <int> clients;
+	esp_err_t ws_send_large_buffer(httpd_req_t *req, const uint8_t *data, size_t len);
+	static void ws_send_chunk_cb(void *arg);
+	esp_err_t ws_send_chunked_sync(
+                               int sockfd,
+                               const uint8_t *data,
+                               size_t len,
+                               size_t chunk_size);
+
+};
+
+#endif /* MAIN_WEBSOCKET_H_ */
