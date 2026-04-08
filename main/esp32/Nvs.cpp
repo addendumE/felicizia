@@ -45,7 +45,7 @@ bool Nvs::getString(const string key, string &value)
 			{
 				nvs_get_str(handle, key.c_str(), data, &size);
 				value = string(data,size-1);
-				ESP_LOGD(TAG,"getString value:%s",value.c_str());
+				//ESP_LOGD(TAG,"getString value:%s",value.c_str());
 
 				ret = true;
 				free (data);

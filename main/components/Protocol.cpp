@@ -41,7 +41,7 @@ void Protocol::propChangeNotification(const string objId,Types::PropertyId id)
 	}
 	else
 	{
-		ESP_LOGE(TAG,"propChangeNotification json error");
+		//ESP_LOGE(TAG,"propChangeNotification json error");
 	}
 
 }

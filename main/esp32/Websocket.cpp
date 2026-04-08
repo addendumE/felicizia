@@ -64,6 +64,7 @@ void Websocket::start(int port)
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 	config.uri_match_fn = httpd_uri_match_wildcard;  // Abilita wildcard
 	config.server_port = port;
+	//config.task_queue_size = 20;   // esempio
 	// Start the httpd server
 	ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
 	if (httpd_start(&server, &config) == ESP_OK) {
@@ -74,7 +75,7 @@ void Websocket::start(int port)
 		httpd_register_uri_handler(server, &readConf_uri);
 		httpd_register_uri_handler(server, &writeConf_uri);
 	    httpd_register_uri_handler(server, &index_uri);
-		Thread::start;
+		Thread::start();
 	}
 }
 
@@ -92,6 +93,7 @@ void Websocket::loop()
 	while (true) {
        httpd_ws_frame_t frame;
         if (xQueueReceive(xQueueTx, &frame, portMAX_DELAY)) {
+
 			for (auto c:clients)
 			{
 				auto *job = new ws_tx_job_t {
@@ -99,17 +101,18 @@ void Websocket::loop()
 					.client_fd = c,
 					.frm      = frame
 				};
-
 	            esp_err_t err = httpd_queue_work(
     	            server,
         	        ws_tx_work_cb,
             	    job
             	);
-
             	if (err != ESP_OK) {
+		            free(job->frm.payload);
                 	// cleanup se httpd è morto
                 	delete job;
             	}
+
+
         	}
 		}
     }
@@ -153,8 +156,11 @@ bool Websocket::ws_enqueue_fragmented_text(const string &msg)
         frame.fragmented = !frame.final;  // opzionale ma coerente
 
         // push in coda
+
         if (xQueueSend(xQueueTx, &frame, portMAX_DELAY) != pdTRUE) {
             free(payload);
+			ESP_LOGE(TAG,"xQueueSend");
+
             return false;
         }
         offset += chunk_len;
@@ -180,7 +186,6 @@ void Websocket::send(const string &s)
 esp_err_t Websocket::callback_protocol(httpd_req_t *req)
 {
 	Websocket * me = (Websocket *) req->user_ctx;
-
 	if (req->method == HTTP_GET) {
 		int fd = httpd_req_to_sockfd(req);
 		me->take();
@@ -192,25 +197,26 @@ esp_err_t Websocket::callback_protocol(httpd_req_t *req)
 
 	httpd_ws_frame_t ws_pkt;
 	memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
-	ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
 	esp_err_t ret = httpd_ws_recv_frame(req, &ws_pkt, 0);
 	if (ret != ESP_OK) {
 		ESP_LOGE(TAG, "httpd_ws_recv_frame failed to get frame len with %d", ret);
 	    return ret;
 	}
-
-	httpd_ws_frame_t frame = {};
-    ret = httpd_ws_recv_frame(req, &frame, 0);
-    if (ret != ESP_OK) return ret;
-
-    if (frame.len > 0) {
-        uint8_t *tmp = (uint8_t *)malloc(frame.len);
-        frame.payload = tmp;
-        httpd_ws_recv_frame(req, &frame, frame.len);
-		ESP_LOGI(TAG, "Got packet with message: %s [%d] frag:%d  final:%d", ws_pkt.payload,
-	    			ws_pkt.len,ws_pkt.fragmented,ws_pkt.final);
-		me->onMessage(string((char*)ws_pkt.payload, (size_t)ws_pkt.len));
-        free(tmp);
+    if (ws_pkt.len > 0) {
+        ws_pkt.payload = (uint8_t *)calloc(1,ws_pkt.len+1);
+       	ret =  httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
+		if (ret == ESP_OK)
+		{
+			ESP_LOGI(TAG, "Got packet with message: %s [%d] frag:%d  final:%d", ws_pkt.payload,
+						ws_pkt.len,ws_pkt.fragmented,ws_pkt.final);
+			me->onMessage(string((char*)ws_pkt.payload, (size_t)ws_pkt.len));
+		}
+		else
+		{
+			ESP_LOGE(TAG, "httpd_ws_recv_frame failed to get frame data with %d", ret);
+		}
+		free(ws_pkt.payload);
     }
     return ESP_OK;
 }

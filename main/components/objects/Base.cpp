@@ -30,7 +30,7 @@ bool Base::addFloatProperty(PropertyId p, Property::Mode mode, float _default, U
 		}
 	}
 	setPropertyValue(p,_default);
-	ESP_LOGW(TAG,"%s.%s added with value %f",id.c_str(),propertyNames.at(p).c_str(),_default);
+	//ESP_LOGW(TAG,"%s.%s added with value %f",id.c_str(),propertyNames.at(p).c_str(),_default);
 	return true;
 }
 bool Base::addStringProperty(PropertyId p, Property::Mode mode, string _default, StringProperty::onSet onSetCback)
@@ -46,7 +46,7 @@ bool Base::addStringProperty(PropertyId p, Property::Mode mode, string _default,
 		}
 	}
 	setPropertyValue(p,_default);
-	ESP_LOGW(TAG,"%s.%s added with value %s",id.c_str(),propertyNames.at(p).c_str(),_default.c_str());
+	//ESP_LOGW(TAG,"%s.%s added with value %s",id.c_str(),propertyNames.at(p).c_str(),_default.c_str());
 	return true;
 }
 
@@ -58,7 +58,7 @@ bool Base::addIntProperty(PropertyId p,Property::Mode mode,  int _default, IntPr
 	{
 		if (!persistance.loadInt(id, p, _default))
 		{
-			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),propertyNames.at(p).c_str());
+			ESP_LOGW(TAG,"%s.%s ",id.c_str(),propertyNames.at(p).c_str());
 		}
 	}
 	setPropertyValue(p,_default);
@@ -78,7 +78,7 @@ bool Base::addEnumProperty(PropertyId p,Property::Mode mode,  int _default,  vec
 		}
 	}
 	setPropertyValue(p,_default);
-	ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
+	//ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
 	return true;
 }
 
@@ -94,7 +94,7 @@ bool Base::addBoolProperty(PropertyId p,  Property::Mode mode, bool _default , s
 		}
 	}
 	setPropertyValue(p,_default);
-	ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
+	//ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
 	return true;
 }
 
@@ -420,7 +420,7 @@ Property *Base::getProperty(string id)
 			if (propertyList.count(p.first)>0)
 			{
 				ret = propertyList.at(p.first);
-				ESP_LOGI(TAG,"property %s found",id.c_str());
+				//ESP_LOGI(TAG,"property %s found",id.c_str());
 			}
 			else
 			{

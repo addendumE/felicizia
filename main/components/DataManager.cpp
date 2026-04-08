@@ -80,7 +80,7 @@ ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",p
 
     i2c_dev_create_mutex(&mcp23x17Dev);
     mcp23x17_port_set_mode(&mcp23x17Dev,0x00FF); //port A->IN , portb-> out
-    mcp23x17_port_set_pullup(&mcp23x17Dev,0xFF00);
+    mcp23x17_port_set_pullup(&mcp23x17Dev,0xFFFF);
 
     ads11xDev.port = I2C_NUM_0;
     ads11xDev.addr = ADS111X_ADDR_GND;
@@ -197,8 +197,9 @@ void DataManager::doInput()
     uint16_t digital = 0;
 #ifndef LINUX_PLATFORM
     mcp23x17_port_read(&mcp23x17Dev,&digital);
+    ESP_LOGI(TAG,"%04X",digital);
 #endif
-    pumpOnTime.setValue(digital & 0x0F);
+    pumpOnTime.setValue(digital & 0x07);
     pumpDailyCycles.setValue((digital >> 4)& 0x0F);
 }
 
