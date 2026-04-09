@@ -31,11 +31,6 @@ public:
 			return NULL;
 		}
 	};
-	void propChangeNotification(string objId,Types::PropertyId id);
-	void addBinding(Base * srcObj,PropertyId srcProperty, Base * dstObj,PropertyId dstProperty);
 private:
-	typedef tuple <Base * , PropertyId> Bind;
-
 	map <string,Base *> objects;
-	map <Bind,vector<Bind>> bingings;
 };

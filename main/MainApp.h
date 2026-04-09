@@ -25,7 +25,7 @@ public:
 	void changeNotify(string objId, PropertyId p)
 	{
 		protocol.propChangeNotification(objId,p);
-		om.propChangeNotification(objId,p);
+		//om.propChangeNotification(objId,p);
 	}
 	bool loadFloat(string id, PropertyId p, float &value)
 	{

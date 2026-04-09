@@ -36,14 +36,12 @@ void ObjManager::getConf(string &s)
 		}
 	}
 	char *txt = cJSON_Print(jOut);
-	//ESP_LOGI(TAG,"CONFIGURATION: %s",txt);
 	s=string(txt);
 	free(txt);
 	cJSON_Delete(jOut);
 }
 bool ObjManager::setConf(string &s)
 {
-	ESP_LOGI(TAG,"#%s#",s.c_str());
 	bool ret = true;
 	cJSON *jObj = cJSON_Parse(s.c_str());
 	if (jObj == NULL)
@@ -69,19 +67,14 @@ bool ObjManager::setConf(string &s)
 					string sProp=string(jProperty->string);
 					string sVal=string(jProperty->valuestring);
 					Property::SetResult setRes = o->setProperyValueFromString(sProp,sVal);
-					//ESP_LOGI(TAG,"property: %s -> %s -> %d\n", jProperty->string,jProperty->valuestring,setRes);
 					jProperty = jProperty->next;
 				}
 			}
-    		//printf("value: %d\n", jItem->valueint);
     		jItem = jItem->next;
 		}
-			
-
 	}
-     	cJSON_Delete(jObj);
-
-	return true;
+    cJSON_Delete(jObj);
+	return ret;
 }
 bool ObjManager::addObject(Base *obj)
 {
@@ -163,28 +156,4 @@ Property *ObjManager::getPropertyPtr(Base * obj,string propId)
 	Property * p = nullptr;
 	p = obj->getProperty(propId);
 	return p;
-}
-
-void ObjManager::propChangeNotification(string objId,Types::PropertyId id)
-{
-	//ESP_LOGI(TAG,"%s %s changed",objId.c_str(),propertyNames.at(id).c_str());
-	/*Base *oPnt = getObjectPtr(objId);
-	ObjManager::Bind src(oPnt,id);
-	if (bingings.count(src) > 0)
-	{
-		for (auto p:bingings.at(src))
-		{
-			bool found;
-			float x = oPnt->getPropertyValue<float>(id, found);
-			get<0>(p)->setPropertyValue(get<1>(p),x,true);
-			printf("found!!! %f",x);
-		}
-	}*/
-}
-
-void ObjManager::addBinding(Base * srcObj,PropertyId srcProperty, Base * dstObj,PropertyId dstProperty)
-{
-	ObjManager::Bind src(srcObj,srcProperty);
-	ObjManager::Bind dst(dstObj,dstProperty);
-	bingings[src].push_back(dst);
 }
