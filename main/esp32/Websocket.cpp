@@ -11,8 +11,7 @@
 
 
 #define WS_FRAGMENT_SIZE 1024
-Websocket::Websocket():
-	Thread("WS")
+Websocket::Websocket()
 {
 	server = NULL;
     memset(&ws_uri, 0, sizeof(httpd_uri_t));
@@ -51,9 +50,6 @@ Websocket::Websocket():
 	readConf_uri.handler   = callback_http_readConf;
 	readConf_uri.user_ctx  = this;
 	readConf_uri.is_websocket = false;
-
-	 xQueueTx = xQueueCreate( 1024, sizeof( httpd_ws_frame_t ) );
-
 }
 
 Websocket::~Websocket() {
@@ -64,18 +60,17 @@ void Websocket::start(int port)
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 	config.uri_match_fn = httpd_uri_match_wildcard;  // Abilita wildcard
 	config.server_port = port;
+	config.stack_size = 8192; // increase from default 4096
 	//config.task_queue_size = 20;   // esempio
 	// Start the httpd server
 	ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
 	if (httpd_start(&server, &config) == ESP_OK) {
 	    // Registering the ws handler
-	    ESP_LOGI(TAG, "Registering URI handlers");
 	    httpd_register_uri_handler(server, &ota_uri);
 		httpd_register_uri_handler(server, &ws_uri);
 		httpd_register_uri_handler(server, &readConf_uri);
 		httpd_register_uri_handler(server, &writeConf_uri);
 	    httpd_register_uri_handler(server, &index_uri);
-		Thread::start();
 	}
 }
 
@@ -84,65 +79,32 @@ void Websocket::ws_tx_work_cb(void *arg)
 {
     ws_tx_job_t *job = static_cast<ws_tx_job_t *>(arg);  
     httpd_ws_send_frame_async(job->httpd, job->client_fd, &job->frm);
+	//ESP_LOGI(TAG,"free tx payload %p",job->frm.payload);
 	free (job->frm.payload);
 	delete job;
 }
 
-void Websocket::loop()
-{	
-	while (true) {
-       httpd_ws_frame_t frame;
-        if (xQueueReceive(xQueueTx, &frame, portMAX_DELAY)) {
-
-			for (auto c:clients)
-			{
-				auto *job = new ws_tx_job_t {
-					.httpd    = server,
-					.client_fd = c,
-					.frm      = frame
-				};
-	            esp_err_t err = httpd_queue_work(
-    	            server,
-        	        ws_tx_work_cb,
-            	    job
-            	);
-            	if (err != ESP_OK) {
-		            free(job->frm.payload);
-                	// cleanup se httpd è morto
-                	delete job;
-            	}
-
-
-        	}
-		}
-    }
-}
-
-
-#define WS_CHUNK_SIZE 1024  // dimensione frammento (puoi adattarla)
+#define WS_CHUNK_SIZE 8192  // dimensione frammento (puoi adattarla)
 
 bool Websocket::ws_enqueue_fragmented_text(const string &msg)
 {
     size_t total_len = msg.size();
     size_t offset = 0;
     bool first = true;
-
     while (offset < total_len) {
         size_t chunk_len = std::min((size_t)WS_CHUNK_SIZE, total_len - offset);
-
         // alloca payload
         uint8_t* payload = (uint8_t*)malloc(chunk_len);
         if (!payload) {
+			ESP_LOGE(TAG,"mem allocation fail");
             return false; // out of memory
         }
-
+		//ESP_LOGI(TAG,"malloc tx payload %p",payload);
         memcpy(payload, msg.data() + offset, chunk_len);
-
         // crea frame
         httpd_ws_frame_t frame = {};
         frame.payload = payload;
         frame.len = chunk_len;
-
         // tipo frame
         if (first) {
             frame.type = HTTPD_WS_TYPE_TEXT;
@@ -154,15 +116,24 @@ bool Websocket::ws_enqueue_fragmented_text(const string &msg)
         // final flag
         frame.final = (offset + chunk_len) >= total_len;
         frame.fragmented = !frame.final;  // opzionale ma coerente
-
-        // push in coda
-
-        if (xQueueSend(xQueueTx, &frame, portMAX_DELAY) != pdTRUE) {
-            free(payload);
-			ESP_LOGE(TAG,"xQueueSend");
-
-            return false;
-        }
+		for (auto c:clients)
+		{
+			auto *job = new ws_tx_job_t {
+				.httpd    = server,
+				.client_fd = c,
+				.frm      = frame
+			};
+			esp_err_t err = httpd_queue_work(
+				server,
+				ws_tx_work_cb,
+				job
+			);
+			if (err != ESP_OK) {
+				ESP_LOGE(TAG,"httpd_queue_work err %d",err);
+				free (frame.payload);
+				delete job;
+			}
+		}
         offset += chunk_len;
     }
     return true;
@@ -176,10 +147,6 @@ void Websocket::send(const string &s)
 		// break string in frames and insert them into the work queue
 		ws_enqueue_fragmented_text(s);
 	}
-	else
-	{
-		
-	}
 	Lock::give();
 }
 
@@ -188,9 +155,9 @@ esp_err_t Websocket::callback_protocol(httpd_req_t *req)
 	Websocket * me = (Websocket *) req->user_ctx;
 	if (req->method == HTTP_GET) {
 		int fd = httpd_req_to_sockfd(req);
-		me->take();
 		ESP_LOGI(TAG, "New connection on %d",fd);
-		me->clients.push_back(fd);
+		me->take();
+		me->clients.insert(fd);
 		me->give();
 	    return ESP_OK;
 	}
@@ -200,22 +167,32 @@ esp_err_t Websocket::callback_protocol(httpd_req_t *req)
     ws_pkt.type = HTTPD_WS_TYPE_TEXT;
 	esp_err_t ret = httpd_ws_recv_frame(req, &ws_pkt, 0);
 	if (ret != ESP_OK) {
-		ESP_LOGE(TAG, "httpd_ws_recv_frame failed to get frame len with %d", ret);
+		int fd = httpd_req_to_sockfd(req);
+		ESP_LOGI(TAG, "connection closed on %d",fd);
+		me->take();		
+		me->clients.erase(fd);
+		me->give();		
 	    return ret;
 	}
     if (ws_pkt.len > 0) {
         ws_pkt.payload = (uint8_t *)calloc(1,ws_pkt.len+1);
+		//ESP_LOGI(TAG,"calloc rx payload %p",ws_pkt.payload);
+		if (!ws_pkt.payload)
+	 	{
+			  ESP_LOGE(TAG,"mem allocation fail");
+	 	}
        	ret =  httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
 		if (ret == ESP_OK)
 		{
-			ESP_LOGI(TAG, "Got packet with message: %s [%d] frag:%d  final:%d", ws_pkt.payload,
-						ws_pkt.len,ws_pkt.fragmented,ws_pkt.final);
+			/*ESP_LOGI(TAG, "Got packet with message: %s [%d] frag:%d  final:%d", ws_pkt.payload,
+						ws_pkt.len,ws_pkt.fragmented,ws_pkt.final);*/
 			me->onMessage(string((char*)ws_pkt.payload, (size_t)ws_pkt.len));
 		}
 		else
 		{
 			ESP_LOGE(TAG, "httpd_ws_recv_frame failed to get frame data with %d", ret);
 		}
+		//ESP_LOGI(TAG,"free rx payload %p",ws_pkt.payload);
 		free(ws_pkt.payload);
     }
     return ESP_OK;
@@ -266,6 +243,10 @@ esp_err_t Websocket::callback_http_upload(httpd_req_t *req)
 	 }*/
 	 me.start_ota();
 	 char *tmp = (char*)malloc(TMP_SIZE);
+	 if (tmp == NULL)
+	 {
+			  ESP_LOGE(TAG,"mem allocation fail");
+	 }
 	 while (total_len > 0)
 	 {
 		 int received = httpd_req_recv(req, tmp, (total_len > TMP_SIZE) ? TMP_SIZE:total_len);
@@ -306,6 +287,7 @@ esp_err_t Websocket::callback_http_readConf(httpd_req_t *req)
 	string tmp;
 	me.onConfigRead(tmp);
 	httpd_resp_set_type(req, "text/plain");
+	httpd_resp_set_hdr(req, "Content-Disposition", "attachment; filename=\"config.txt\"");
     httpd_resp_send(req, (char*)tmp.c_str(), HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }

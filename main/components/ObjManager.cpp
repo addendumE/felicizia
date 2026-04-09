@@ -59,7 +59,6 @@ bool ObjManager::setConf(string &s)
 	{
 		cJSON *jItem = jObj->child;
 		while (jItem) {
-			printf("key: %s\n", jItem->string);
 		   	cJSON *jProperty = jItem->child;
 			string sObj=string(jItem->string);
 			Base *o = objects.at(sObj);
@@ -70,7 +69,7 @@ bool ObjManager::setConf(string &s)
 					string sProp=string(jProperty->string);
 					string sVal=string(jProperty->valuestring);
 					Property::SetResult setRes = o->setProperyValueFromString(sProp,sVal);
-					printf("property: %s -> %s -> %d\n", jProperty->string,jProperty->valuestring,setRes);
+					//ESP_LOGI(TAG,"property: %s -> %s -> %d\n", jProperty->string,jProperty->valuestring,setRes);
 					jProperty = jProperty->next;
 				}
 			}

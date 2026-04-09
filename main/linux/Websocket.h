@@ -26,7 +26,7 @@ public:
 	Websocket();
 	virtual ~Websocket();
 	void start(int port);
-	virtual void onMessage(const string&) = 0;
+	virtual void onMessage(char *) = 0;
 	virtual void onOTAenter() = 0;
 	virtual void onOTAexit() = 0;
 	virtual void onConfigRead(string &s) = 0;

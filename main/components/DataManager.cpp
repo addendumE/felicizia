@@ -5,6 +5,7 @@ static const char *TAG="DM";
 
 #define POMPA_SERBATOIO_GPIO    GPIO_NUM_8
 #define POMPA_FOSSO_GPIO        GPIO_NUM_9
+#define LINUX_PLATFORM
 
 DataManager::DataManager (ObjManager &om,Persistance &persistance,Hal &hal):
 Thread("dataManager"),
@@ -31,7 +32,7 @@ livRiempimentoSerbatoioOk("livRiempimentoSerbatoioOk","serbatoio pronto a riempi
 livIrrigazioneOk("livIrrigazioneOk","serbatoio pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
 tensioneBatteriaOk("tensioneBatteriaOk","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
 temperaturaAriaOk("temperaturaAriaOk","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
-conducibilitaOk("conducibilitaOk","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_OVER),
+conducibilitaOk("conducibilitaOk","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_IN),
 cmdPompaRiempimento("cmdPompaRiempimento","comando pompa riempimento",persistance,0,false),
 cmdPompaIrrigazione("cmdPompaIrrigazione","comando pompa irrigazione",persistance,0,false),
 ledAlive("ledAlive","led alive",persistance,0,false),

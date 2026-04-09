@@ -9,10 +9,9 @@
 #define MAIN_WEBSOCKET_H_
 
 #include <string>
-#include <list>
+#include <set>
 #include <vector>
 #include <functional>
-#include "Thread.h"
 #include "Lock.h"
 #include "esp_system.h"
 #include <esp_wifi.h>
@@ -35,7 +34,7 @@ using namespace std;
 
 #define RX_BUFFER_BYTES 2048
 
-class Websocket: public Thread, public Lock {
+class Websocket: public Lock {
 public:
 	Websocket();
 	virtual ~Websocket();
@@ -47,15 +46,13 @@ public:
 	virtual bool onConfigWrite(string&s) = 0;
 	void send(const string&);
 private:
-	QueueHandle_t xQueueTx;
-	void loop();
 	struct ws_tx_job_t {
     	httpd_handle_t httpd;
     	int client_fd;
     	httpd_ws_frame_t frm;
 	};
 
-	list <int> clients;
+	set <int> clients;
 
 
 	static esp_err_t callback_http(httpd_req_t *req);
