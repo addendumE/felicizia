@@ -6,8 +6,6 @@ static const char *TAG="DM";
 #define POMPA_SERBATOIO_GPIO    GPIO_NUM_8
 #define POMPA_FOSSO_GPIO        GPIO_NUM_9
 
-
-
 DataManager::DataManager (ObjManager &om,Persistance &persistance,Hal &hal):
 Thread("dataManager"),
 om(om),
@@ -17,57 +15,57 @@ ads11xDev({}),
 #endif
 persistance(persistance),
 hal(hal),
-storageLevelMeter(0,4),
-trenchLevelMeter(1,3),
+livSerbatoioMeter(0,4),
+livFossoMeter(1,3),
 device("device","device",persistance),
 vbatt("vbatt","tensione batteria",persistance,UNIT_VOLTAGE,1),
-ppm("ppm","conducibilità",persistance,UNIT_CONDUCTIVITY,1),
-trenchLevel("trenchLevel","livello fosso",persistance,UNIT_DISTANCE,1),
-storageLevel("storageLevel","livello serbatotio",persistance,UNIT_DISTANCE,1),
-airTemperature("airTemperature","temperatura aria",persistance,UNIT_TEMPERATURE,1),
-waterTemperature("waterTemperature","temperatura acqua",persistance,UNIT_TEMPERATURE,1),
-pumpOnTime("pumpOnTime","tempo pompaggio",persistance,UNIT_MINUTES,1),
-pumpDailyCycles("pumpDailyCycles","cicli pompaggio",persistance,UNIT_NONE,0),
-svuotamentoCanaleTh("svuotamentoCanaleTh","fosso pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
-riempimentoSerbatoioTh("riempimentoSerbatoioTh","serbatoio pronto a riempimento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_UNDER),
-svuotamentoSerbatoioTh("svuotamentoSerbatoioTh","serbatoio pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
-batteryGoodTh("batteryGoodTh","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
-airTemperatureGoodTh("airTemperatureGoodTh","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
-ppmGoodTh("ppmGoodTh","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_OVER),
-trenchPumpCmd("trenchPumpCmd","trench pump",persistance,0,false),
-storagePumpCmd("storagePumpCmd","storage pump",persistance,0,false),
+sccm("sccm","conducibilità",persistance,UNIT_CONDUCTIVITY,1),
+livFosso("livFosso","livello fosso",persistance,UNIT_DISTANCE,1),
+livSerbatoio("livSerbatoio","livello serbatoio",persistance,UNIT_DISTANCE,1),
+tempAria("tempAria","temperatura aria",persistance,UNIT_TEMPERATURE,1),
+tempAcqua("tempAcqua","temperatura acqua",persistance,UNIT_TEMPERATURE,1),
+tempoIrrigazione("tempoIrrigazione","tempo irrigazione",persistance,UNIT_MINUTES,1),
+numeroIrrigazioni("numeroIrrigazioni","numero irrigazioni",persistance,UNIT_NONE,0),
+livSvuotamentoCanaleOk("livSvuotamentoCanaleOk","fosso pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
+livRiempimentoSerbatoioOk("livRiempimentoSerbatoioOk","serbatoio pronto a riempimento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_UNDER),
+livIrrigazioneOk("livIrrigazioneOk","serbatoio pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
+tensioneBatteriaOk("tensioneBatteriaOk","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
+temperaturaAriaOk("temperaturaAriaOk","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
+conducibilitaOk("conducibilitaOk","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_OVER),
+cmdPompaRiempimento("cmdPompaRiempimento","comando pompa riempimento",persistance,0,false),
+cmdPompaIrrigazione("cmdPompaIrrigazione","comando pompa irrigazione",persistance,0,false),
 ledAlive("ledAlive","led alive",persistance,0,false),
-ledLowBatt("ledLowBatt","led low batt",persistance,0,false),
-ledLowFosso("ledLowFosso","led low fosso",persistance,0,false),
-ledTorbidita("ledTorbidita","led torbidita",persistance,0,false),
-ledGelo("ledGelo","led bassa temperatura aria",persistance,0,false),
-ledSerbatoioVuoto("ledSerbatoioVuoto","led serbatoio vuoto",persistance,0,false),
+ledLowBatt("ledLowBatt","led batteria bassa",persistance,0,false),
+ledLowFosso("ledLowFosso","led fosso vuoto",persistance,0,false),
+ledTorbidita("ledTorbidita","led torbidita anomala",persistance,0,false),
+ledLowTaria("ledLowTaria","led temperatura aria bassa",persistance,0,false),
+ledLowSerbatoio("ledLowSerbatoio","led serbatoio vuoto",persistance,0,false),
 ledErrorePompaFosso("ledErrorePompaFosso","led errore pompa fosso",persistance,0,false),
 ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",persistance,0,false)
 {
     om.addObject(&device);
     om.addObject(&vbatt);
-    om.addObject(&ppm);
-    om.addObject(&trenchLevel);
-    om.addObject(&storageLevel);
-    om.addObject(&airTemperature);
-    om.addObject(&waterTemperature);
-    om.addObject(&pumpOnTime);
-    om.addObject(&pumpDailyCycles);
-    om.addObject(&svuotamentoCanaleTh);
-    om.addObject(&riempimentoSerbatoioTh);
-    om.addObject(&svuotamentoSerbatoioTh);
-    om.addObject(&batteryGoodTh);
-    om.addObject(&airTemperatureGoodTh);
-    om.addObject(&ppmGoodTh);
-    om.addObject(&trenchPumpCmd);
-    om.addObject(&storagePumpCmd);
+    om.addObject(&sccm);
+    om.addObject(&livFosso);
+    om.addObject(&livSerbatoio);
+    om.addObject(&tempAria);
+    om.addObject(&tempAcqua);
+    om.addObject(&tempoIrrigazione);
+    om.addObject(&numeroIrrigazioni);
+    om.addObject(&livSvuotamentoCanaleOk);
+    om.addObject(&livRiempimentoSerbatoioOk);
+    om.addObject(&livIrrigazioneOk);
+    om.addObject(&tensioneBatteriaOk);
+    om.addObject(&temperaturaAriaOk);
+    om.addObject(&conducibilitaOk);
+    om.addObject(&cmdPompaRiempimento);
+    om.addObject(&cmdPompaIrrigazione);
     om.addObject(&ledAlive);
     om.addObject(&ledLowBatt);
     om.addObject(&ledLowFosso);
     om.addObject(&ledTorbidita);
-    om.addObject(&ledGelo);
-    om.addObject(&ledSerbatoioVuoto);
+    om.addObject(&ledLowTaria);
+    om.addObject(&ledLowSerbatoio);
     om.addObject(&ledErrorePompaFosso);
     om.addObject(&ledErrorePompaSerbatoio);
 #ifndef LINUX_PLATFORM    
@@ -168,27 +166,27 @@ void DataManager::doInput()
 
     // 1wire AIR temperatures;
     res = ow.readTemperature(0,tmpVal);
-    airTemperature.setValue(tmpVal,!res);
+    tempAria.setValue(tmpVal,!res);
 
     // 1wire WATER temperatures;
     res = ow.readTemperature(1,tmpVal);
-    waterTemperature.setValue(tmpVal,!res);
+    tempAcqua.setValue(tmpVal,!res);
 
     //analog input #0 (TDS sensor)
     res = adcRead(ADS111X_MUX_0_GND,tmpVal);
     float _ppm = 66.71f*pow(tmpVal,3) - 127.93f*pow(tmpVal,2) + 428.7f*tmpVal;
-	_ppm = _ppm * (1.0f+0.02f*(waterTemperature.getValue() - 25.0f));
-    ppm.setValue(_ppm,!res);
+	_ppm = _ppm * (1.0f+0.02f*(tempAcqua.getValue() - 25.0f));
+    sccm.setValue(_ppm,!res);
 
     //analog input #1 (battery voltage)
     res = adcRead(ADS111X_MUX_1_GND,tmpVal);
     vbatt.setValue(tmpVal,!res);
 
     // STORAGE LEVEL
-    storageLevel.setValue(storageLevelMeter.getMeasure(),storageLevelMeter.getMeasure()>=5.9f);
+    livSerbatoio.setValue(livSerbatoioMeter.getMeasure(),livSerbatoioMeter.getMeasure()>=5.9f);
 
     // TRENCH LEVEL
-    trenchLevel.setValue(trenchLevelMeter.getMeasure(),trenchLevelMeter.getMeasure()>=5.9f);
+    livFosso.setValue(livFossoMeter.getMeasure(),livFossoMeter.getMeasure()>=5.9f);
 
     // DEVICE
     device.setFreeHeap(hal.heapOccupation());
@@ -199,8 +197,8 @@ void DataManager::doInput()
     mcp23x17_port_read(&mcp23x17Dev,&digital);
     ESP_LOGI(TAG,"%04X",digital);
 #endif
-    pumpOnTime.setValue(digital & 0x07);
-    pumpDailyCycles.setValue((digital >> 4)& 0x0F);
+    tempoIrrigazione.setValue(digital & 0x07);
+    numeroIrrigazioni.setValue((digital >> 4)& 0x0F);
 }
 
 void DataManager::doOutput()
@@ -222,11 +220,11 @@ void DataManager::doOutput()
     {
         out |= 0x0800;
     }
-    if (ledGelo.getValue())
+    if (ledLowTaria.getValue())
     {
         out |= 0x1000;
     }
-    if (ledSerbatoioVuoto.getValue())
+    if (ledLowSerbatoio.getValue())
     {
         out |= 0x2000;
     }
@@ -240,8 +238,8 @@ void DataManager::doOutput()
     }
 #ifndef LINUX_PLATFORM
     mcp23x17_port_write(&mcp23x17Dev,out);
-    gpio_set_level(POMPA_SERBATOIO_GPIO,storagePumpCmd.getValue());
-    gpio_set_level(POMPA_FOSSO_GPIO,trenchPumpCmd.getValue());
+    gpio_set_level(POMPA_SERBATOIO_GPIO,cmdPompaIrrigazione.getValue());
+    gpio_set_level(POMPA_FOSSO_GPIO,cmdPompaRiempimento.getValue());
 #endif
 }
 
@@ -285,42 +283,42 @@ void DataManager::loop()
         msleep(1000);
         doInput();
 
-        svuotamentoCanaleTh.setValue(trenchLevel.getValue());
+        livSvuotamentoCanaleOk.setValue(livFosso.getValue());
 
-        riempimentoSerbatoioTh.setValue(storageLevel.getValue());
+        livRiempimentoSerbatoioOk.setValue(livSerbatoio.getValue());
 
-        svuotamentoSerbatoioTh.setValue(storageLevel.getValue());
+        livIrrigazioneOk.setValue(livSerbatoio.getValue());
 
-        batteryGoodTh.setValue(vbatt.getValue());
+        tensioneBatteriaOk.setValue(vbatt.getValue());
 
-        airTemperatureGoodTh.setValue(airTemperature.getValue());
+        temperaturaAriaOk.setValue(tempAria.getValue());
 
-        ppmGoodTh.setValue(ppm.getValue());
+        conducibilitaOk.setValue(sccm.getValue());
 
-        trenchPumpCmd.setValue(
-            airTemperatureGoodTh.getValue() &&
-            batteryGoodTh.getValue() &&
-            svuotamentoCanaleTh.getValue() &&
-            riempimentoSerbatoioTh.getValue()
+        cmdPompaRiempimento.setValue(
+            temperaturaAriaOk.getValue() &&
+            tensioneBatteriaOk.getValue() &&
+            livSvuotamentoCanaleOk.getValue() &&
+            livRiempimentoSerbatoioOk.getValue()
         );
 
-        storagePumpCmd.setValue(
-            airTemperatureGoodTh.getValue() &&
-            batteryGoodTh.getValue() &&
-            svuotamentoSerbatoioTh.getValue() &&
+        cmdPompaIrrigazione.setValue(
+            temperaturaAriaOk.getValue() &&
+            tensioneBatteriaOk.getValue() &&
+            livIrrigazioneOk.getValue() &&
             pompa_on(
-                pumpDailyCycles.getValue(),
-                pumpOnTime.getValue()*60
+                (int)numeroIrrigazioni.getValue(),
+                (int)tempoIrrigazione.getValue()*60
             )
         );
 
         ledAlive.setValue(!ledAlive.getValue());
-        ledLowBatt.setValue(!batteryGoodTh.getValue());
-        ledLowFosso.setValue(!svuotamentoCanaleTh.getValue());
-        ledTorbidita.setValue(!ppmGoodTh.getValue());
-        ledGelo.setValue(!airTemperatureGoodTh.getValue());
-        ledSerbatoioVuoto.setValue(!svuotamentoSerbatoioTh.getValue());
-        ledTorbidita.setValue(!ppmGoodTh.getValue());
+        ledLowBatt.setValue(!tensioneBatteriaOk.getValue());
+        ledLowFosso.setValue(!livSvuotamentoCanaleOk.getValue());
+        ledTorbidita.setValue(!conducibilitaOk.getValue());
+        ledLowTaria.setValue(!temperaturaAriaOk.getValue());
+        ledLowSerbatoio.setValue(!livIrrigazioneOk.getValue());
+        ledTorbidita.setValue(!conducibilitaOk.getValue());
         ledErrorePompaFosso.setValue(false);
         ledErrorePompaSerbatoio.setValue(false);
         doOutput();

@@ -3,6 +3,21 @@
  *
  * SPDX-License-Identifier: CC0-1.0
  */
+
+ /*
+
+html-minifier-terser index.full.html \
+  --collapse-whitespace \
+  --remove-comments \
+  --remove-optional-tags \
+  --remove-redundant-attributes \
+  --remove-script-type-attributes \
+  --remove-style-link-type-attributes \
+  --minify-js true \
+  --minify-css true \
+  -o ../HTML/index.html
+ 
+ */
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
