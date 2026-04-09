@@ -57,7 +57,7 @@ struct my_post_buffer {
 	typedef struct lws * ws_client_id;
 	struct lws_http_mount mount_files;
 	struct lws_http_mount mount_api;
-	list <int> clients;
+	list <struct lws *> clients;
 };
 
 #endif /* MAIN_WEBSOCKET_H_ */

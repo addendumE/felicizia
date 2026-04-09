@@ -27,15 +27,15 @@
 			<form class="ui-filterable">
 				<input id="filterBasic-input" data-type="search">
 			</form>
-			<table  data-role="table" data-filter="true" data-input="#filterBasic-input" data-mode="reflow" class="ui-responsive table-stroke" >
+			<table  data-role="table" data-filter="true" data-input="#filterBasic-input" data-mode="none" class="ui-responsive table-stroke" >
 				<tbody id="mainList">
 				</tbody>
 				<thead>
         			<tr>
             			<th onclick="sortTable(0)">Tipo</th>
             			<th onclick="sortTable(1)">Nome</th>
-						<th>Attr</th>
 						<th>Valore</th>
+						<th></th>
         			</tr>
     			</thead>
 			</table >
@@ -76,7 +76,7 @@
     		<h1 id="objName" style="text-align:center;">My Page Title</h1>
 		</div>
 		<div role="main" class="ui-content">
-			<table  data-role="table" data-mode="reflow" class="ui-responsive table-stroke" >
+			<table  data-role="table" data-mode="none" class="ui-responsive table-stroke" >
 				<tbody id="propertyList">
 			</tbody>
 			</table >
@@ -186,23 +186,23 @@
 		 Jrow.append($("<td>").html(prop))
 		 var jValue;
 		switch (data.type) {
-			case 0://bool
+			case 0:
 				jValue = $("<input type='checkbox' />");
 				if (data.value  == true)
 				{
 				jValue.attr("checked",true);
 				}
 				break;
-			case 1://float
+			case 1:
 				jValue = $("<input type='number' placeholder='"+data.svalue+"' />");
 			break;
-			case 2://integer
+			case 2:
 				jValue = $("<input type='number' value='"+data.value+"' />");
 				break;
-			case 3://string
+			case 3:
 				jValue = $("<input type='text' value='"+data.value+"' />");
 				break;
-			case 4://string
+			case 4:
 				jValue = $("<select/>");
 				$.each(data.options, function(val, text) {
 					jOption = $('<option></option>').val(val).html(text)
@@ -214,10 +214,15 @@
 				});
 				break;
 		}
-		 Jrow.append($("<TD>").append(jValue))
-		 var Jicons=($("<TD style='text-align: right'>"))
- 	     if (data.rw) Jicons.append("E")
-		 if (data.persist) Jicons.append("P")
+		Jrow.append($("<TD>").append(jValue))
+		var Jicons=($("<TD style='position:relative; text-align:center;'>"))
+ 	    if (data.rw) {
+			Jicons.append(" <span class='ui-icon ui-icon-edit ui-btn-icon-notext'></span>")
+		}
+		else {
+			//jValue.attr('readonly', true);
+    		jValue.prop("disabled", true)
+		}
 		Jrow.append(Jicons)
 		jValue.on("propChange_"+id+"_"+prop, function(event, _data) {
 			if($(this).attr("placeholder")) {
@@ -261,9 +266,14 @@
 		$.each(_data,function(index,value) {
 			var jTr = $("<tr>")
 			jTr.append($("<td>").html(value.type))
-			jTr.append($("<td>").html(value.name))
-			var jIcons = $("<td>");
-			var JiconFail = $("Fa");
+			var jName = ($("<td>").html(value.name))	
+			jName.click(function(){
+				sessionStorage.setItem("objectId",value.id)
+				$.mobile.changePage("#objDetails");
+			});
+			jTr.append(jName)
+			var jIcons = $("<td style='position:relative; text-align:center;'>");
+			var JiconFail = $("<span class='ui-icon ui-icon-alert ui-btn-icon-notext'></span>");
 			if (value.fail!="yes") JiconFail.hide();
 			JiconFail.on("propChange_"+value.id+"_fail", function(event, data) {
 			if (data.value)
@@ -271,7 +281,7 @@
 			else
 				$(this).hide();
 			});	
-			var JiconOverride = $("Ov");
+			var JiconOverride = $("<span class='ui-icon ui-icon-lock ui-btn-icon-notext'></span>");
 			if (value.override!="yes") JiconOverride.hide();
 			JiconOverride.on("propChange_"+value.id+"_override", function(event, data) {
 			if (data.value)
@@ -281,18 +291,13 @@
 			});	
 			jIcons.append(JiconFail);
 			jIcons.append(JiconOverride);
-			jTr.append(jIcons);
+			
 			jValue = $("<td>").html(value.svalue)
 			jValue.on("propChange_"+value.id+"_value", function(event, data) {
 				 $(this).text(data.svalue);
 			});
-			jTr.append(jValue)
-			var jIcon=$("<a href='#' class='ui-btn ui-mini ui-btn-inline ui-shadow'>&gt;</a>")
-			jIcon.click(function(){
-				sessionStorage.setItem("objectId",value.id)
-				$.mobile.changePage("#objDetails");
-			});
-			jTr.append($("<td style='text-align: right' class='button-cell'>").append(jIcon))
+			jTr.append(jValue);
+			jTr.append(jIcons);
 			$("#mainList").append(jTr);
 		})
 	}
