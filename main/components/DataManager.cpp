@@ -193,10 +193,12 @@ void DataManager::doInput()
     vbatt.setValue(tmpVal,!res);
 
     // STORAGE LEVEL
-    livSerbatoio.setValue(livSerbatoioMeter.getMeasure(),livSerbatoioMeter.getMeasure()>=5.9f);
+    bool fail = livSerbatoioMeter.getMeasure(tmpVal);
+    livSerbatoio.setValue(tmpVal ,tmpVal>=5.9f || fail);
 
     // TRENCH LEVEL
-    livFosso.setValue(livFossoMeter.getMeasure(),livFossoMeter.getMeasure()>=5.9f);
+    fail = livFossoMeter.getMeasure(tmpVal);
+    livFosso.setValue(tmpVal,tmpVal>=5.9f || fail);
 
     // DEVICE
     device.setFreeHeap(hal.heapOccupation());

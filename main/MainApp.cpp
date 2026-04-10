@@ -37,6 +37,7 @@ void MainApp::start()
     dataManager->onBootButton([this]() {
 		if (WifiManager::getMode()!=WifiManager::WIFI_AP)
 		{
+			ESP_LOGI(TAG,"activating AP from button");
 			ap();
 		}
         

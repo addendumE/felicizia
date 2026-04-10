@@ -8,7 +8,8 @@ static const char *TAG="UsRange";
 UsRange::UsRange(int com_port,int rxPin):
     Thread("UsRange"),
     com_port((uart_port_t)com_port),
-    distance(0.0f)
+    distance(0.0f),
+    fail(true)
 {
     ESP_LOGI(TAG,"init on com %d gpio %d",com_port,rxPin);
     bzero((void*)&uart_config,sizeof(uart_config));
@@ -31,9 +32,14 @@ UsRange::~UsRange()
 
 }
 
-float UsRange::getMeasure()
+bool UsRange::getMeasure(float &val)
 {
-    return distance;
+    bool ret;
+    take();
+    val = distance;
+    ret = fail;
+    give();
+    return ret;
 }
 
 void UsRange::loop(void)
@@ -44,9 +50,18 @@ void UsRange::loop(void)
         // Read data from the UART
         int len = uart_read_bytes(com_port, data, (BUF_SIZE - 1), 25 / portTICK_PERIOD_MS);
         if ( (len==4) && (data[0]==0xFF) && ( (uint8_t)(data[0]+data[1]+data[2])==data[3]))  {
+            take();
             float tmp_distance = (256.0*data[1]+data[2])/1000.0;
             if (distance == 0.0f) distance = tmp_distance;
             distance = distance*0.95+0.05*tmp_distance;
+            fail = false;
+            give();
+        }
+        else
+        {
+            take();
+            fail = true;
+            give();
         }
     }
 }
