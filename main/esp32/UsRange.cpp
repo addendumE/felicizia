@@ -44,25 +44,21 @@ bool UsRange::getMeasure(float &val)
 
 void UsRange::loop(void)
 {
-    uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
+    uint8_t data[4];
     while (1) {
         
         // Read data from the UART
-        int len = uart_read_bytes(com_port, data, (BUF_SIZE - 1), pdMS_TO_TICKS(100));
+        int len = uart_read_bytes(com_port, data, sizeof(data), pdMS_TO_TICKS(1000));
+        take();
         if ( (len==4) && (data[0]==0xFF) && ( (uint8_t)(data[0]+data[1]+data[2])==data[3]))  {
-            take();
             float tmp_distance = (256.0*data[1]+data[2])/1000.0;
-            if (distance == 0.0f) distance = tmp_distance;
-            distance = distance*0.95+0.05*tmp_distance;
+            distance = distance*0.95f+0.05f*tmp_distance;
             fail = false;
-            give();
         }
         else
         {
-            uart_flush_input(com_port);
-            take();
             fail = true;
-            give();
         }
+        give();
     }
 }
