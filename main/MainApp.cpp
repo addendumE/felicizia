@@ -72,5 +72,10 @@ void MainApp::start()
 void MainApp::onMode(WifiManager::Mode mode)
 {
 	ESP_LOGI(TAG,"wifi mode now is: %d",mode);
+	if (mode == WifiManager::WIFI_CLI_FAIL)
+	{
+		vTaskDelay(pdMS_TO_TICKS(1000));
+		join();
+	}
 }
 
