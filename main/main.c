@@ -43,8 +43,9 @@ void app_main(void)
 	}
 	ESP_ERROR_CHECK(ret);
     //nvs_example();
-    //esp_log_level_set("*", ESP_LOG_ERROR);
-    //esp_log_level_set("NVS", ESP_LOG_INFO);
+    esp_log_level_set("*", ESP_LOG_ERROR);
+    esp_log_level_set("APP", ESP_LOG_INFO);
+    esp_log_level_set("Wifi", ESP_LOG_INFO);
     ESP_ERROR_CHECK(i2cdev_init());
     startup();
 }

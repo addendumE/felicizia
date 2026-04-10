@@ -5,6 +5,7 @@
 #include "DigitalOutput.h"
 #include "Device.h"
 #include "Threshold.h"
+#include <functional>
 #ifndef LINUX_PLATFORM
 #include "ads111x.h"
 #include "mcp23x17.h"
@@ -34,7 +35,13 @@ public:
     string getSSID();
     string getPwd();
     string getKey();
+    using ButtonCallBack = std::function<void(void)>;
+    void onBootButton(ButtonCallBack cb) {
+        bootButtonCallBack = cb;
+    }
 private:
+    ButtonCallBack bootButtonCallBack;
+
     void loop();
     ObjManager &om;
     OneWire ow;
@@ -71,6 +78,8 @@ private:
     DigitalOutput ledLowSerbatoio;
     DigitalOutput ledErrorePompaFosso;
     DigitalOutput ledErrorePompaSerbatoio;
+    int last_state;
+
     bool adcRead(ads111x_mux_t mux, float &res);
     void doInput();
     void doOutput();

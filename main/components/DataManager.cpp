@@ -5,6 +5,7 @@ static const char *TAG="DM";
 
 #define POMPA_SERBATOIO_GPIO    GPIO_NUM_8
 #define POMPA_FOSSO_GPIO        GPIO_NUM_9
+#define IN_BOOT_BUTTON          GPIO_NUM_9
 #define LINUX_PLATFORM
 
 DataManager::DataManager (ObjManager &om,Persistance &persistance,Hal &hal):
@@ -42,7 +43,8 @@ ledTorbidita("ledTorbidita","led torbidita anomala",persistance,0,false),
 ledLowTaria("ledLowTaria","led temperatura aria bassa",persistance,0,false),
 ledLowSerbatoio("ledLowSerbatoio","led serbatoio vuoto",persistance,0,false),
 ledErrorePompaFosso("ledErrorePompaFosso","led errore pompa fosso",persistance,0,false),
-ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",persistance,0,false)
+ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",persistance,0,false),
+last_state(1)
 {
     om.addObject(&device);
     om.addObject(&vbatt);
@@ -93,16 +95,23 @@ ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",p
     ads111x_set_gain(&ads11xDev, ADS111X_GAIN_4V096);
 
 
-    gpio_config_t io_conf = {
+    gpio_config_t out_conf = {
         .pin_bit_mask = (1ULL << POMPA_FOSSO_GPIO) | (1ULL << POMPA_SERBATOIO_GPIO),
         .mode = GPIO_MODE_OUTPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_DISABLE
     };
-    gpio_config(&io_conf);
+    gpio_config(&out_conf);
     ow.init(GPIO_NUM_2);
 #endif
+    gpio_config_t in_conf = {};
+    in_conf.intr_type = GPIO_INTR_DISABLE;
+    in_conf.mode = GPIO_MODE_INPUT;
+    in_conf.pin_bit_mask = (1ULL << IN_BOOT_BUTTON);
+    in_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    in_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    gpio_config(&in_conf);
     start();
 }
 
@@ -242,6 +251,11 @@ void DataManager::doOutput()
     gpio_set_level(POMPA_SERBATOIO_GPIO,cmdPompaIrrigazione.getValue());
     gpio_set_level(POMPA_FOSSO_GPIO,cmdPompaRiempimento.getValue());
 #endif
+    int state = gpio_get_level(IN_BOOT_BUTTON);
+    if (state != last_state && state == 0) {
+        if (bootButtonCallBack) bootButtonCallBack();
+    }
+    last_state = state;
 }
 
 bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi) {

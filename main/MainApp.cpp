@@ -34,6 +34,15 @@ void MainApp::start()
 	#endif
 		});
 
+    dataManager->onBootButton([this]() {
+		if (WifiManager::getMode()!=WifiManager::WIFI_AP)
+		{
+			ap();
+		}
+        
+    });
+
+
 	//string ssid,pwd,mode,key;
 	//nvs.getString("ssid",ssid);
 	//nvs.getString("pwd",pwd);
@@ -61,6 +70,6 @@ void MainApp::start()
 
 void MainApp::onMode(WifiManager::Mode mode)
 {
-
+	ESP_LOGI(TAG,"wifi mode now is: %d",mode);
 }
 

@@ -15,6 +15,7 @@ Device::Device(string id,string name, Persistance &p):
 	addStringProperty(PROP_SSID,Property::MODE_WRITABLE_PERSISTENT,"");
 	addStringProperty(PROP_SSID_KEY,Property::MODE_WRITABLE_PERSISTENT,"");
 	addStringProperty(PROP_TS_KEY,Property::MODE_WRITABLE_PERSISTENT,"");
+	addStringProperty(PROP_SW_VERSION,Property::MODE_READONLY,BUILD_VERSION);
 }
 
 Device::~Device() {

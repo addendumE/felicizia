@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Thread.h"
 #include <string>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -17,7 +16,7 @@
 
 using namespace std;
 
-class WifiManager: public Thread  {
+class WifiManager{
 public:
 	enum Mode
 	{
@@ -46,7 +45,6 @@ private:
     esp_event_handler_instance_t instance_got_ip;
     wifi_config_t wifi_config;
 
-	void loop();
 	void wifi_init_sta(const string, const string);
 	void init_ap(const string ssid);
 

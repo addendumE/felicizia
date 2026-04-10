@@ -11,7 +11,6 @@
 static const char *TAG = "Wifi";
 
 WifiManager::WifiManager():
-	Thread("Wifi"),
 	mode(WIFI_OFF)
 {
 	wifi_config = {};
@@ -38,10 +37,6 @@ WifiManager::WifiManager():
 
 WifiManager::~WifiManager() {
 }
-
-void WifiManager::loop() {
-}
-
 
 bool WifiManager::off(bool silent)
 {
