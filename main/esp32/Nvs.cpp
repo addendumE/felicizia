@@ -72,8 +72,7 @@ bool Nvs::setString(const string key, const string value)
 {
 	Lock::take();
 	bool ret = false;
-	ESP_LOGI(TAG,"setString [%s] %s",ns.c_str(),key.c_str());
-	ESP_LOGD(TAG,"setString value:%s",value.c_str());
+	ESP_LOGI(TAG,"setString [%s] %s -> %s",ns.c_str(),key.c_str(),value.c_str());
 	if (opened)
 	{
 		esp_err_t res = nvs_set_str(handle, key.c_str(), value.c_str());
@@ -84,7 +83,7 @@ bool Nvs::setString(const string key, const string value)
 		}
 		else
 		{
-			ESP_LOGE(TAG,"setString: error %x",res);
+			ESP_LOGE(TAG,"setString: error %s",esp_err_to_name(res));
 		}
 	}
 	else

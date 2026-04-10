@@ -48,7 +48,7 @@ void UsRange::loop(void)
     while (1) {
         
         // Read data from the UART
-        int len = uart_read_bytes(com_port, data, (BUF_SIZE - 1), 25 / portTICK_PERIOD_MS);
+        int len = uart_read_bytes(com_port, data, (BUF_SIZE - 1), pdMS_TO_TICKS(100));
         if ( (len==4) && (data[0]==0xFF) && ( (uint8_t)(data[0]+data[1]+data[2])==data[3]))  {
             take();
             float tmp_distance = (256.0*data[1]+data[2])/1000.0;
@@ -59,6 +59,7 @@ void UsRange::loop(void)
         }
         else
         {
+            uart_flush_input(com_port);
             take();
             fail = true;
             give();

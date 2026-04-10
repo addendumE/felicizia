@@ -4,9 +4,8 @@
 static const char *TAG="DM";
 
 #define POMPA_SERBATOIO_GPIO    GPIO_NUM_8
-#define POMPA_FOSSO_GPIO        GPIO_NUM_9
+#define POMPA_FOSSO_GPIO        GPIO_NUM_5
 #define IN_BOOT_BUTTON          GPIO_NUM_9
-#define LINUX_PLATFORM
 
 DataManager::DataManager (ObjManager &om,Persistance &persistance,Hal &hal):
 Thread("dataManager"),
@@ -26,24 +25,24 @@ livFosso("livFosso","livello fosso",persistance,UNIT_DISTANCE,1),
 livSerbatoio("livSerbatoio","livello serbatoio",persistance,UNIT_DISTANCE,1),
 tempAria("tempAria","temperatura aria",persistance,UNIT_TEMPERATURE,1),
 tempAcqua("tempAcqua","temperatura acqua",persistance,UNIT_TEMPERATURE,1),
-tempoIrrigazione("tempoIrrigazione","tempo irrigazione",persistance,UNIT_MINUTES,1),
-numeroIrrigazioni("numeroIrrigazioni","numero irrigazioni",persistance,UNIT_NONE,0),
-livSvuotamentoCanaleOk("livSvuotamentoCanaleOk","fosso pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
-livRiempimentoSerbatoioOk("livRiempimentoSerbatoioOk","serbatoio pronto a riempimento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_UNDER),
-livIrrigazioneOk("livIrrigazioneOk","serbatoio pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
-tensioneBatteriaOk("tensioneBatteriaOk","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
-temperaturaAriaOk("temperaturaAriaOk","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
-conducibilitaOk("conducibilitaOk","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_IN),
-cmdPompaRiempimento("cmdPompaRiempimento","comando pompa riempimento",persistance,0,false),
-cmdPompaIrrigazione("cmdPompaIrrigazione","comando pompa irrigazione",persistance,0,false),
+tempoIrrigazione("tempoIrrig","tempo irrigazione",persistance,UNIT_MINUTES,1),
+numeroIrrigazioni("numIrrig","numero irrigazioni",persistance,UNIT_NONE,0),
+livSvuotamentoCanaleOk("livSvtFossoOk","fosso pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
+livRiempimentoSerbatoioOk("livRmpSerbOk","serbatoio pronto a riempimento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_UNDER),
+livIrrigazioneOk("livIrrigOk","serbatoio pronto a svuotamento",persistance,UNIT_DISTANCE,1,false,Threshold::MODE_OVER),
+tensioneBatteriaOk("vBattOk","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
+temperaturaAriaOk("tempAriaOk","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
+conducibilitaOk("sccmOk","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_IN),
+cmdPompaRiempimento("cmdPriemp","comando pompa riempimento",persistance,0,false),
+cmdPompaIrrigazione("cmdPirrig","comando pompa irrigazione",persistance,0,false),
 ledAlive("ledAlive","led alive",persistance,0,false),
 ledLowBatt("ledLowBatt","led batteria bassa",persistance,0,false),
 ledLowFosso("ledLowFosso","led fosso vuoto",persistance,0,false),
-ledTorbidita("ledTorbidita","led torbidita anomala",persistance,0,false),
+ledTorbidita("ledTorb","led torbidita anomala",persistance,0,false),
 ledLowTaria("ledLowTaria","led temperatura aria bassa",persistance,0,false),
-ledLowSerbatoio("ledLowSerbatoio","led serbatoio vuoto",persistance,0,false),
-ledErrorePompaFosso("ledErrorePompaFosso","led errore pompa fosso",persistance,0,false),
-ledErrorePompaSerbatoio("ledErrorePompaSerbatoio","led errore pompa serbatoio",persistance,0,false),
+ledLowSerbatoio("ledLowSerb","led serbatoio vuoto",persistance,0,false),
+ledErrorePompaFosso("ledErrPfosso","led errore pompa fosso",persistance,0,false),
+ledErrorePompaSerbatoio("ledErrPserb","led errore pompa serbatoio",persistance,0,false),
 last_state(1)
 {
     om.addObject(&device);
