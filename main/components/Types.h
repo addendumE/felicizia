@@ -59,7 +59,8 @@ namespace Types
 		PROP_SSID,
 		PROP_SSID_KEY,
 		PROP_TS_KEY,
-		PROP_SW_VERSION
+		PROP_SW_VERSION,
+		PROP_FILTER
 	};
 
 extern const map<Type,string> typeNames;

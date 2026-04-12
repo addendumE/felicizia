@@ -1,11 +1,14 @@
 #include "DataManager.h"
 #include <math.h>
 #include <stdint.h>
+#include <esp_log.h>
 static const char *TAG="DM";
 
 #define POMPA_SERBATOIO_GPIO    GPIO_NUM_8
 #define POMPA_FOSSO_GPIO        GPIO_NUM_5
 #define IN_BOOT_BUTTON          GPIO_NUM_9
+#define IN_FEEDBACK_P_CANALE    GPIO_NUM_21
+#define IN_FEEDBACK_P_SERBATOIO    GPIO_NUM_20
 
 DataManager::DataManager (ObjManager &om,Persistance &persistance,Hal &hal):
 Thread("dataManager"),
@@ -21,8 +24,8 @@ livFossoMeter(1,3),
 device("device","device",persistance),
 vbatt("vbatt","tensione batteria",persistance,UNIT_VOLTAGE,1),
 sccm("sccm","conducibilità",persistance,UNIT_CONDUCTIVITY,1),
-livFosso("livFosso","livello fosso",persistance,UNIT_DISTANCE,1),
-livSerbatoio("livSerbatoio","livello serbatoio",persistance,UNIT_DISTANCE,1),
+livFosso("livFosso","livello fosso",persistance,UNIT_DISTANCE,2),
+livSerbatoio("livSerbatoio","livello serbatoio",persistance,UNIT_DISTANCE,2),
 tempAria("tempAria","temperatura aria",persistance,UNIT_TEMPERATURE,1),
 tempAcqua("tempAcqua","temperatura acqua",persistance,UNIT_TEMPERATURE,1),
 tempoIrrigazione("tempoIrrig","tempo irrigazione",persistance,UNIT_MINUTES,1),
@@ -33,16 +36,18 @@ livIrrigazioneOk("livIrrigOk","serbatoio pronto a svuotamento",persistance,UNIT_
 tensioneBatteriaOk("vBattOk","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
 temperaturaAriaOk("tempAriaOk","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
 conducibilitaOk("sccmOk","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_IN),
-cmdPompaRiempimento("cmdPriemp","comando pompa riempimento",persistance,0,false),
-cmdPompaIrrigazione("cmdPirrig","comando pompa irrigazione",persistance,0,false),
-ledAlive("ledAlive","led alive",persistance,0,false),
-ledLowBatt("ledLowBatt","led batteria bassa",persistance,0,false),
-ledLowFosso("ledLowFosso","led fosso vuoto",persistance,0,false),
-ledTorbidita("ledTorb","led torbidita anomala",persistance,0,false),
-ledLowTaria("ledLowTaria","led temperatura aria bassa",persistance,0,false),
-ledLowSerbatoio("ledLowSerb","led serbatoio vuoto",persistance,0,false),
-ledErrorePompaFosso("ledErrPfosso","led errore pompa fosso",persistance,0,false),
-ledErrorePompaSerbatoio("ledErrPserb","led errore pompa serbatoio",persistance,0,false),
+cmdPompaRiempimento("cmdPriemp","comando pompa riempimento",persistance,false),
+cmdPompaIrrigazione("cmdPirrig","comando pompa irrigazione",persistance,false),
+ledAlive("ledAlive","led alive",persistance,false),
+ledLowBatt("ledLowBatt","led batteria bassa",persistance,false),
+ledLowFosso("ledLowFosso","led fosso vuoto",persistance,false),
+ledTorbidita("ledTorb","led torbidita anomala",persistance,false),
+ledLowTaria("ledLowTaria","led temperatura aria bassa",persistance,false),
+ledLowSerbatoio("ledLowSerb","led serbatoio vuoto",persistance,false),
+ledErrorePompaFosso("ledErrPfosso","led errore pompa fosso",persistance,false),
+ledErrorePompaSerbatoio("ledErrPserb","led errore pompa serbatoio",persistance,false),
+feedbackPompaCanale("feedPcanale","feedback pompa canale",persistance),
+feedbackPompaSerbatoio("feddPserb","feedback pompa serbatoio",persistance),
 last_state(1)
 {
     om.addObject(&device);
@@ -70,6 +75,8 @@ last_state(1)
     om.addObject(&ledLowSerbatoio);
     om.addObject(&ledErrorePompaFosso);
     om.addObject(&ledErrorePompaSerbatoio);
+    om.addObject(&feedbackPompaCanale);
+    om.addObject(&feedbackPompaSerbatoio);
 #ifndef LINUX_PLATFORM    
     mcp23x17Dev.port = I2C_NUM_0;
     mcp23x17Dev.addr = MCP23X17_ADDR_BASE;
@@ -103,14 +110,15 @@ last_state(1)
     };
     gpio_config(&out_conf);
     ow.init(GPIO_NUM_2);
-#endif
     gpio_config_t in_conf = {};
     in_conf.intr_type = GPIO_INTR_DISABLE;
     in_conf.mode = GPIO_MODE_INPUT;
-    in_conf.pin_bit_mask = (1ULL << IN_BOOT_BUTTON);
+    in_conf.pin_bit_mask = (1ULL << IN_BOOT_BUTTON) | (1ULL << IN_FEEDBACK_P_CANALE) | (1ULL << IN_FEEDBACK_P_SERBATOIO);
     in_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     in_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&in_conf);
+#endif
+    
     start();
 }
 
@@ -211,6 +219,8 @@ void DataManager::doInput()
 #endif
     tempoIrrigazione.setValue(digital & 0x07);
     numeroIrrigazioni.setValue((digital >> 4)& 0x0F);
+    feedbackPompaCanale.setValue(gpio_get_level(IN_FEEDBACK_P_CANALE));
+    feedbackPompaSerbatoio.setValue(gpio_get_level(IN_FEEDBACK_P_SERBATOIO));
 }
 
 void DataManager::doOutput()

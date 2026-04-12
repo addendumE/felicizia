@@ -3,6 +3,7 @@
 #include "Persistance.h"
 #include "AnalogInput.h"
 #include "DigitalOutput.h"
+#include "DigitalInput.h"
 #include "Device.h"
 #include "Threshold.h"
 #include <functional>
@@ -78,6 +79,8 @@ private:
     DigitalOutput ledLowSerbatoio;
     DigitalOutput ledErrorePompaFosso;
     DigitalOutput ledErrorePompaSerbatoio;
+    DigitalInput feedbackPompaCanale;
+    DigitalInput feedbackPompaSerbatoio;
     int last_state;
 
     bool adcRead(ads111x_mux_t mux, float &res);

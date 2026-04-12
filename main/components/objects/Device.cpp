@@ -6,7 +6,7 @@
  */
 
 #include "Device.h"
-
+#include "esp_log.h"
 Device::Device(string id,string name, Persistance &p):
 	Base(TYPE_DEVICE,id,name,p)
 {

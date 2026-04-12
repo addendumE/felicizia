@@ -51,8 +51,7 @@ void UsRange::loop(void)
         int len = uart_read_bytes(com_port, data, sizeof(data), pdMS_TO_TICKS(1000));
         take();
         if ( (len==4) && (data[0]==0xFF) && ( (uint8_t)(data[0]+data[1]+data[2])==data[3]))  {
-            float tmp_distance = (256.0*data[1]+data[2])/1000.0;
-            distance = distance*0.95f+0.05f*tmp_distance;
+            distance = (256.0*data[1]+data[2])/1000.0;
             fail = false;
         }
         else

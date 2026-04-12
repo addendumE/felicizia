@@ -12,13 +12,13 @@
 	</style>
 </head>
 <body>
-	 <div data-role="page" id="Main"> 	<!-- Main Page 1 -->
+	 <div data-role="page" id="Main">
 		<div data-role="header" data-position="fixed" data-id="global-header">
-			<h1>Main page</h1>
 			<div data-role="navbar" >
 				<ul>
 					<li><a href="#Main" data-icon="home" class="ui-btn-active">Home</a></li>
-					<li><a href="#Fup" data-icon="info">Info</a></li>
+					<li><a href="#Log" data-icon="bullets">Log</a></li>
+					<li><a href="#Fup" data-icon="gear">Setting</a></li>
 				</ul>
 			</div>
 		</div>
@@ -40,13 +40,37 @@
 			</table >
 		</div>
 	</div>
+<div data-role="page" id="Log">
+		<div data-role="header" data-position="fixed" data-id="global-header">
+			<div data-role="navbar" >
+				<ul>
+					<li><a href="#Main" data-icon="home" >Home</a></li>
+					<li><a href="#Log" data-icon="bullets" class="ui-btn-active">Log</a></li>
+					<li><a href="#Fup" data-icon="gear">Setting</a></li>
+				</ul>
+			</div>
+		</div>
+		<div data-role="content">
+			<table  data-role="table" data-filter="true" data-input="#filterBasic-input" data-mode="none" class="ui-responsive table-stroke" >
+				<tbody id="logList">
+				</tbody>
+				<thead>
+        			<tr>
+            			<th>TS</th>
+            			<th>Event</th>
+						<th>Value</th>
+        			</tr>
+    			</thead>
+			</table >
+		</div>
+	</div>
 	<div data-role="page" id="Fup"> 	<!-- FUP page -->
 		<div data-role="header" data-position="fixed" data-id="global-header">
-			<h1>FW upgrade</h1>
 			<div data-role="navbar">
 				<ul>
-					<li><a href="#Main" data-icon="home">Home</a></li>
-					<li><a href="#Fup" class="ui-btn-active" data-icon="grid">Manutenzione</a></li>
+					<li><a href="#Main" data-icon="home" >Home</a></li>
+					<li><a href="#Log" data-icon="bullets">Log</a></li>
+					<li><a href="#Fup" data-icon="gear" class="ui-btn-active">Setting</a></li>
 				</ul>
 			</div>
 		</div>
@@ -95,6 +119,14 @@
     });
 
     rows.forEach(row => table.appendChild(row));
+
+	function tableRoll(tableId,rows) {
+    var numeroRighe = $("#" + tableId + " tr").length;
+
+    if (numeroRighe > rows) {
+        $("#" + tableId + " tr:first").remove();
+    }
+}
 }
 	function wsConnect()
 	{
@@ -131,6 +163,12 @@
 				$("body *").each(function() {
       				 $(this).trigger(obj.id+"_"+obj.data.id, obj.data);
     			 });
+				 if (obj.data.id!="ledAlive_value")
+				 {
+					var now = new Date()
+					$("#logList").append("<tr><td>"+now.getHours()+":"+now.getMinutes()+":"+now.getSeconds()+"</td><td>"+obj.data.id+"</td><td>"+obj.data.svalue+"</td></tr>");
+					tableRoll("logList",128)
+				 }
 			}
 			else if(obj.id == "ping") {
 			}

@@ -6,6 +6,14 @@
 #include <time.h>
 #define pdMS_TO_TICKS(x) (x/1000)
 
+#define vTaskDelay(x)
+#define esp_restart()
+#define gpio_get_level(x) false
+
+#define GPIO_NUM_21 21
+#define GPIO_NUM_20 20
+#define GPIO_NUM_9 9
+#define BUILD_VERSION "VER_LINUX"
 
 typedef enum {
     ESP_LOG_NONE,       /*!< No log output */

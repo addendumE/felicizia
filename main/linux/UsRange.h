@@ -10,7 +10,7 @@ class UsRange: public Thread
     public:
         UsRange(int com_port,int rxPin):Thread("th"){};
         virtual ~UsRange(){};
-        float getMeasure(){return 0.0f;};
+        bool getMeasure(float &val ){return true;};
     private:
     void loop(){sleep(1);};
 };

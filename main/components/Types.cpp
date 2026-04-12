@@ -32,7 +32,8 @@ const map<PropertyId,string> Types::propertyNames = {
    {PROP_SSID,"ssid"},
    {PROP_SSID_KEY,"ssid_key"},
    {PROP_TS_KEY,"ts_key"},
-   {PROP_SW_VERSION,"sw_version"}
+   {PROP_SW_VERSION,"sw_version"},
+   {PROP_FILTER,"filter"}
 };
 
 const map<Type,string> Types::typeNames = {

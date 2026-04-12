@@ -5,14 +5,15 @@
  *      Author: maurizio
  */
 
-#include "DigitalOutput.h"
+#include "DigitalInput.h"
 
-DigitalOutput::DigitalOutput(string id,string name, Persistance &p , bool _default):
-	Base(TYPE_BINARY_OUTPUT,id,name,p)
+DigitalInput::DigitalInput(string id,string name, Persistance &p):
+	Base(TYPE_BINARY_INPUT,id,name,p),
+	oldValue(false)
 {
 
-	addBoolProperty(PROP_VALUE,Property::MODE_READONLY,_default,"on","off");
-	addBoolProperty(PROP_OVERRIDE_VALUE,Property::MODE_WRITABLE_PERSISTENT, _default,"on","off",
+	addBoolProperty(PROP_VALUE,Property::MODE_READONLY,false,"on","off");
+	addBoolProperty(PROP_OVERRIDE_VALUE,Property::MODE_WRITABLE_PERSISTENT, false,"on","off",
 			[&](bool ov) {
 				bool found;
 				bool _override = getPropertyValue<bool>(PROP_OVERRIDE,found);
@@ -35,22 +36,31 @@ DigitalOutput::DigitalOutput(string id,string name, Persistance &p , bool _defau
 	);
 }
 
-DigitalOutput::~DigitalOutput() {
+DigitalInput::~DigitalInput() {
 }
 
 
-void DigitalOutput::setValue(bool val)
+void DigitalInput::setValue(bool val)
 {
 	bool _found;
 	bool _override = getPropertyValue<bool>(PROP_OVERRIDE,_found);
 	if (_override)
 	{
 		val = getPropertyValue<bool>(PROP_OVERRIDE_VALUE,_found);
+		setPropertyValue<bool>(PROP_VALUE,val);
 	}
-	setPropertyValue<bool>(PROP_VALUE,val);
+	else
+	{
+		if (val == oldValue)
+		{
+			setPropertyValue<bool>(PROP_VALUE,val);
+		}
+		oldValue=val;
+	}
+	
 }
 
-bool DigitalOutput::getValue()
+bool DigitalInput::getValue()
 {
 	bool _found;
 	return getPropertyValue<bool>(PROP_VALUE,_found);

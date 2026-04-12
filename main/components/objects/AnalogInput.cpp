@@ -10,6 +10,7 @@ AnalogInput::AnalogInput(string id,string name,Persistance &p, Unit unit, int de
 	Base(TYPE_ANALOG_INPUT,id,name,p)
 {
 	addFloatProperty(PROP_VALUE,Property::MODE_READONLY,_default,unit,decimals);
+	addFloatProperty(PROP_FILTER,Property::MODE_WRITABLE_PERSISTENT,1.0,UNIT_NONE,2);
 	addFloatProperty(PROP_OVERRIDE_VALUE,Property::MODE_WRITABLE_PERSISTENT, _default,unit,decimals,
 			[&](float ov) {
 				bool found;
@@ -53,13 +54,19 @@ void AnalogInput::setValue(float val,bool fail)
 	{
 		val = getPropertyValue<float>(PROP_OVERRIDE_VALUE,_found);
 		setPropertyValue<bool>(PROP_FAIL,false);
+		setPropertyValue<float>(PROP_VALUE,val);
 	}
 	else
 	{
 		setPropertyValue<bool>(PROP_FAIL,fail);
+		bool _found;
+		float flt =getPropertyValue<float>(PROP_FILTER,_found);
+		float old = getPropertyValue<float>(PROP_VALUE,_found);
+		if (flt >1.0f ) flt = 1.0f;
+		val = val*flt+old*(1.0f-flt);
+		setPropertyValue<float>(PROP_VALUE,val);
 	}
 	//ESP_LOGI(TAG,"set %f [%d]",val,fail);
-	setPropertyValue<float>(PROP_VALUE,val);
 }
 
 float AnalogInput::getValue()
