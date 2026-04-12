@@ -101,7 +101,10 @@ public:
 private:
 	ObjManager &om;
 	void onOTAenter(){};
-	void onOTAexit(){};
+	void onOTAexit(){
+		vTaskDelay(pdMS_TO_TICKS(1000));
+		esp_restart();
+	};
 	void onConfigRead(string &s)
 	{
 		om.getConf(s);

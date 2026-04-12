@@ -91,7 +91,7 @@ last_state(1)
     i2c_dev_create_mutex(&ads11xDev);
     ads111x_set_mode(&ads11xDev, ADS111X_MODE_SINGLE_SHOT); 
     ads111x_set_data_rate(&ads11xDev, ADS111X_DATA_RATE_8);
-    ads111x_set_gain(&ads11xDev, ADS111X_GAIN_4V096);
+    ads111x_set_gain(&ads11xDev, ADS111X_GAIN_2V048);
 
 
     gpio_config_t out_conf = {
@@ -153,12 +153,13 @@ bool DataManager::adcRead(ads111x_mux_t mux, float &res)
             break;
         }
         vTaskDelay(10);
+
     }
     if (ret)
     {
         int16_t val = 0;
         ads111x_get_value(&ads11xDev, &val);
-        res = val*4096.0f/32760.0f;
+        res = (val*2048.0f/32760.0f)/1000.0f;
     }
     else
     {
@@ -181,14 +182,14 @@ void DataManager::doInput()
     res = ow.readTemperature(1,tmpVal);
     tempAcqua.setValue(tmpVal,!res);
 
-    //analog input #0 (TDS sensor)
-    res = adcRead(ADS111X_MUX_0_GND,tmpVal);
+    //analog input #1 (TDS sensor)
+    res = adcRead(ADS111X_MUX_1_GND,tmpVal);
     float _ppm = 66.71f*pow(tmpVal,3) - 127.93f*pow(tmpVal,2) + 428.7f*tmpVal;
 	_ppm = _ppm * (1.0f+0.02f*(tempAcqua.getValue() - 25.0f));
     sccm.setValue(_ppm,!res);
 
-    //analog input #1 (battery voltage)
-    res = adcRead(ADS111X_MUX_1_GND,tmpVal);
+    //analog input #0 (battery voltage)
+    res = adcRead(ADS111X_MUX_0_GND,tmpVal);
     vbatt.setValue(tmpVal,!res);
 
     // STORAGE LEVEL

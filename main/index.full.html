@@ -52,11 +52,11 @@
 		</div>
 		<div data-role="content">
 			<h2>Manutenzione</h2>
-			 <form id="uploadFw" action="/ciao.bin" method="post" data-ajax="false">
-            	<label for="fileInput1">Firmware upload</label>
-            	<input type="file" accept=".bin" data-clear-btn="true" name="fileInput1" id="fileInput1" value=""/>
-				<button type="submit">Upload</button>
-			 </form>
+			 <form id="uploadFw" data-ajax="false">
+    			<label for="fileInput1">Firmware upload</label>
+    			<input type="file" accept=".bin" id="fileInput1" data-clear-btn="true">
+    			<button id="uploadBtn">Upload</button>
+			</form>
 			 <form id="uploadConfig"  data-ajax="false" >
     			<label for="uploadConfigFile">Seleziona file config:</label>
     			<input type="file" name="uploadConfigFile" id="uploadConfigFile" accept=".conf" data-clear-btn="true" />
@@ -152,6 +152,28 @@
   		});
 	});
 
+	$("#uploadBtn").on("click", function(e) {
+		e.preventDefault();
+		let file = $("#fileInput1")[0].files[0];
+		if (!file) {
+			alert("Seleziona un file .bin");
+			return;
+		}
+
+		$.ajax({
+			url: "/api/update",
+			type: "POST",
+			data: file,
+			processData: false,
+			contentType: "application/octet-stream",
+			success: function() {
+				alert("Upload OK, l'ESP32 si riavvia");
+			},
+			error: function() {
+				alert("Errore upload");
+			}
+		});
+	});
 	$(document).on("submit", "#uploadConfig", function (e) {
 		e.preventDefault(); // blocca cambio pagina
 		var file = $("#uploadConfigFile")[0].files[0];
