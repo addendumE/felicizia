@@ -2,7 +2,6 @@
 
 #include "WifiManager.h"
 #include "Websocket.h"
-#include "ThingSpeak.h"
 #include "Protocol.h"
 #include "AnalogInput.h"
 #include "ObjManager.h"
@@ -32,7 +31,7 @@ public:
 		id += "_"+to_string(p);
 		string s;
 		bool ret = nvs.getString(id,s);
-		if (ret) value = atof(s.c_str());
+		if (ret) value = (float)atof(s.c_str());
 		return ret;
 	}
 	bool loadInt(string id, PropertyId p, int &value)
@@ -114,7 +113,7 @@ private:
 	}
 };
 
-class MainApp: public WifiManager,  public ThingSpeak {
+class MainApp: public WifiManager {
 public:
 	MainApp();
 	virtual ~MainApp();

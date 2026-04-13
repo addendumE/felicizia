@@ -49,7 +49,6 @@ void MainApp::start()
 	//nvs.getString("pwd",pwd);
 	//nvs.getString("pwd",key);
 
-	ts.setKey(dataManager->getKey());
 	WifiManager::ssid = dataManager->getSSID();
 	WifiManager::pwd = dataManager->getPwd();
 	WifiManager::apHdr = "felicizia";

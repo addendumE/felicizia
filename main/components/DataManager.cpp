@@ -48,8 +48,11 @@ ledErrorePompaFosso("ledErrPfosso","led errore pompa fosso",persistance,false),
 ledErrorePompaSerbatoio("ledErrPserb","led errore pompa serbatoio",persistance,false),
 feedbackPompaCanale("feedPcanale","feedback pompa canale",persistance),
 feedbackPompaSerbatoio("feddPserb","feedback pompa serbatoio",persistance),
-last_state(1)
+last_state(1),
+loopCnt(0),
+oldOut({})
 {
+    oldOut.boot = true;
     om.addObject(&device);
     om.addObject(&vbatt);
     om.addObject(&sccm);
@@ -342,12 +345,88 @@ void DataManager::loop()
         ledAlive.setValue(!ledAlive.getValue());
         ledLowBatt.setValue(!tensioneBatteriaOk.getValue());
         ledLowFosso.setValue(!livSvuotamentoCanaleOk.getValue());
-        ledTorbidita.setValue(!conducibilitaOk.getValue());
         ledLowTaria.setValue(!temperaturaAriaOk.getValue());
         ledLowSerbatoio.setValue(!livIrrigazioneOk.getValue());
         ledTorbidita.setValue(!conducibilitaOk.getValue());
         ledErrorePompaFosso.setValue(false);
         ledErrorePompaSerbatoio.setValue(false);
         doOutput();
+        if (++loopCnt % 10 == 0)
+        {
+            ts.clean();
+            ts.setValue(1,vbatt.getValue());
+            ts.setValue(2,livFosso.getValue());
+            ts.setValue(3,livSerbatoio.getValue());
+            ts.setValue(4,tempAria.getValue());
+            ts.setValue(5,tempAcqua.getValue());
+            ts.setValue(6,sccm.getValue());
+            ts.publish(getKey());
+        }
+        else {
+            string s = "";
+            if (oldOut.boot)
+            {
+                s = s+ " boot";
+                oldOut.boot = false;
+            }
+            if (oldOut.ledLowBatt!=ledLowBatt.getValue())
+            {
+                s = s+ " ledLowBatt="+ (ledLowBatt.getValue() ? "ON":"OFF");
+                oldOut.ledLowBatt=ledLowBatt.getValue();
+            }
+            if (oldOut.ledLowFosso!=ledLowFosso.getValue())
+            {
+                s = s+ " ledLowFosso="+ (ledLowFosso.getValue() ? "ON":"OFF");
+                oldOut.ledLowFosso=ledLowFosso.getValue();
+            }
+            if (oldOut.ledLowTaria!=ledLowTaria.getValue())
+            {
+                s = s+ " ledLowTaria="+ (ledLowTaria.getValue() ? "ON":"OFF");
+                oldOut.ledLowTaria=ledLowTaria.getValue();
+            }
+            if (oldOut.ledLowSerbatoio!=ledLowSerbatoio.getValue())
+            {
+                s = s+ " ledLowSerbatoio="+ (ledLowSerbatoio.getValue() ? "ON":"OFF");
+                oldOut.ledLowSerbatoio=ledLowSerbatoio.getValue();
+            }
+            if (oldOut.ledTorbidita!=ledTorbidita.getValue())
+            {
+                s = s+ " ledTorbidita="+ (ledTorbidita.getValue() ? "ON":"OFF");
+                oldOut.ledTorbidita=ledTorbidita.getValue();
+            }
+            if (oldOut.ledErrorePompaFosso!=ledErrorePompaFosso.getValue())
+            {
+                s = s+ " ledErrorePompaFosso="+ (ledErrorePompaFosso.getValue() ? "ON":"OFF");
+                oldOut.ledErrorePompaFosso=ledErrorePompaFosso.getValue();
+            }
+            if (oldOut.ledErrorePompaSerbatoio!=ledErrorePompaSerbatoio.getValue())
+            {
+                s = s+ " ledErrorePompaSerbatoio="+ (ledErrorePompaSerbatoio.getValue() ? "ON":"OFF");
+                oldOut.ledErrorePompaSerbatoio=ledErrorePompaSerbatoio.getValue();
+            }
+            if (oldOut.cmdPompaIrrigazione!=cmdPompaIrrigazione.getValue())
+            {
+                s = s+ " cmdPompaIrrigazione="+ (cmdPompaIrrigazione.getValue() ? "ON":"OFF");
+                oldOut.cmdPompaIrrigazione=cmdPompaIrrigazione.getValue();
+            }
+            if (oldOut.cmdPompaRiempimento!=cmdPompaRiempimento.getValue())
+            {
+                s = s+ " cmdPompaRiempimento="+ (cmdPompaRiempimento.getValue() ? "ON":"OFF");
+                oldOut.cmdPompaRiempimento=cmdPompaRiempimento.getValue();
+            }
+            if (s.size())
+            {
+                ts.clean();
+                ts.setValue(1,vbatt.getValue());
+                ts.setValue(2,livFosso.getValue());
+                ts.setValue(3,livSerbatoio.getValue());
+                ts.setValue(4,tempAria.getValue());
+                ts.setValue(5,tempAcqua.getValue());
+                ts.setValue(6,sccm.getValue());
+                ts.setValue(7,s);
+                ts.publish(getKey());
+            }
+            
+        }
     }
 }

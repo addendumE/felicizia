@@ -26,6 +26,7 @@ typedef enum
 #include "OneWire.h"
 #include "UsRange.h"
 #include "Hal.h"
+#include "ThingSpeak.h"
 #pragma once
 
 class DataManager: public Thread
@@ -82,7 +83,22 @@ private:
     DigitalInput feedbackPompaCanale;
     DigitalInput feedbackPompaSerbatoio;
     int last_state;
-
+    size_t loopCnt;
+    ThingSpeak ts;
+    struct s_old_out
+    {
+        bool  ledLowBatt:1;
+        bool  ledLowFosso:1;
+        bool  ledTorbidita:1;
+        bool  ledLowTaria:1;
+        bool  ledLowSerbatoio:1;
+        bool  ledErrorePompaFosso:1;
+        bool  ledErrorePompaSerbatoio:1;
+        bool  cmdPompaIrrigazione:1;
+        bool  cmdPompaRiempimento:1;
+        bool  boot:1;
+    };
+    s_old_out oldOut;
     bool adcRead(ads111x_mux_t mux, float &res);
     void doInput();
     void doOutput();
