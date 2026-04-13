@@ -14,11 +14,10 @@ DigitalOutput::DigitalOutput(string id,string name, Persistance &p , bool _defau
 	addBoolProperty(PROP_VALUE,Property::MODE_READONLY,_default,"on","off");
 	addBoolProperty(PROP_OVERRIDE_VALUE,Property::MODE_WRITABLE_PERSISTENT, _default,"on","off",
 			[&](bool ov) {
-				bool found;
-				bool _override = getPropertyValue<bool>(PROP_OVERRIDE,found);
+				bool _override = getPropertyValueBool(PROP_OVERRIDE);
 				if (_override)
 				{
-					setPropertyValue<bool>(PROP_VALUE,ov);
+					setPropertyValueBool(PROP_VALUE,ov);
 				}
 				return Property::SET_OK;
 			});
@@ -26,9 +25,8 @@ DigitalOutput::DigitalOutput(string id,string name, Persistance &p , bool _defau
 			[=,this](bool ov) {
 				if (ov)
 				{
-					bool found;
-					bool val = getPropertyValue<bool>(PROP_OVERRIDE_VALUE,found);
-					setPropertyValue<bool>(PROP_VALUE,val);
+					bool val = getPropertyValueBool(PROP_OVERRIDE_VALUE);
+					setPropertyValueBool(PROP_VALUE,val);
 				}
 				return Property::SET_OK;
 			}
@@ -41,17 +39,16 @@ DigitalOutput::~DigitalOutput() {
 
 void DigitalOutput::setValue(bool val)
 {
-	bool _found;
-	bool _override = getPropertyValue<bool>(PROP_OVERRIDE,_found);
+	bool _override = getPropertyValueBool(PROP_OVERRIDE);
 	if (_override)
 	{
-		val = getPropertyValue<bool>(PROP_OVERRIDE_VALUE,_found);
+		val = getPropertyValueBool(PROP_OVERRIDE_VALUE);
 	}
-	setPropertyValue<bool>(PROP_VALUE,val);
+	setPropertyValueBool(PROP_VALUE,val);
 }
 
 bool DigitalOutput::getValue()
 {
 	bool _found;
-	return getPropertyValue<bool>(PROP_VALUE,_found);
+	return getPropertyValueBool(PROP_VALUE);
 }

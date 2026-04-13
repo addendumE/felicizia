@@ -29,7 +29,7 @@ bool Base::addFloatProperty(PropertyId p, Property::Mode mode, float _default, U
 			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),propertyNames.at(p).c_str());
 		}
 	}
-	setPropertyValue(p,_default);
+	setPropertyValueFloat(p,_default);
 	//ESP_LOGW(TAG,"%s.%s added with value %f",id.c_str(),propertyNames.at(p).c_str(),_default);
 	return true;
 }
@@ -45,7 +45,7 @@ bool Base::addStringProperty(PropertyId p, Property::Mode mode, string _default,
 			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),propertyNames.at(p).c_str());
 		}
 	}
-	setPropertyValue(p,_default);
+	setPropertyValueString(p,_default);
 	//ESP_LOGW(TAG,"%s.%s added with value %s",id.c_str(),propertyNames.at(p).c_str(),_default.c_str());
 	return true;
 }
@@ -61,7 +61,7 @@ bool Base::addIntProperty(PropertyId p,Property::Mode mode,  int _default, IntPr
 			ESP_LOGW(TAG,"%s.%s ",id.c_str(),propertyNames.at(p).c_str());
 		}
 	}
-	setPropertyValue(p,_default);
+	setPropertyValueInt(p,_default);
 	ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
 	return true;
 }
@@ -77,7 +77,7 @@ bool Base::addEnumProperty(PropertyId p,Property::Mode mode,  int _default,  vec
 			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),propertyNames.at(p).c_str());
 		}
 	}
-	setPropertyValue(p,_default);
+	setPropertyValueInt(p,_default);
 	//ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
 	return true;
 }
@@ -93,7 +93,7 @@ bool Base::addBoolProperty(PropertyId p,  Property::Mode mode, bool _default , s
 			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),propertyNames.at(p).c_str());
 		}
 	}
-	setPropertyValue(p,_default);
+	setPropertyValueBool(p,_default);
 	//ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
 	return true;
 }
@@ -101,39 +101,38 @@ bool Base::addBoolProperty(PropertyId p,  Property::Mode mode, bool _default , s
 
 bool Base::getPropertyJsonValue(PropertyId p , cJSON **jObj)
 {
-	bool ret = true;
 	switch (propertyList[p]->getType())
 	{
 		case VALUE_TYPE_BOOL:
 		{
-			bool val = getPropertyValue<bool>(p, ret);
+			bool val = getPropertyValueBool(p);
 			*jObj = cJSON_CreateBool(val);
 			break;
 		}
 		case VALUE_TYPE_FLOAT:
 		{
-			float val = getPropertyValue<float>(p,ret);
+			float val = getPropertyValueFloat(p);
 			*jObj = cJSON_CreateNumber(val);
 			break;
 		}
 		case VALUE_TYPE_INTEGER:
 		case VALUE_TYPE_ENUM:
 		{
-			int val = getPropertyValue<int>(p, ret);
+			int val = getPropertyValueInt(p);
 			*jObj = cJSON_CreateNumber(val);
 			break;
 		}
 		case VALUE_TYPE_STRING:
 		{
-			string val = getPropertyValue<string>(p, ret);
+			string val = getPropertyValueString(p);
 			*jObj = cJSON_CreateString(val.c_str());
 			break;
 		}
 		default:
-			ret = false;
+			break;
 	}
 
-	return ret;
+	return true;
 }
 #if 0
 Property::SetResult Base::setProperty(PropertyId p, cJSON *jObj)
@@ -272,32 +271,52 @@ bool Base::setProperty(string data)
 }
 #endif
 
-template string Base::getPropertyValue<string>(Types::PropertyId, bool&);
-template bool Base::getPropertyValue<bool>(Types::PropertyId, bool&);
-template int Base::getPropertyValue<int>(Types::PropertyId, bool&);
-template float Base::getPropertyValue<float>(Types::PropertyId, bool&);
 
-template <typename T>
-T Base::getPropertyValue(PropertyId p, bool &found)
+bool Base::getPropertyValueBool(PropertyId p)
 {
-	T ret;
-	//ESP_LOGI(TAG,"get property %s %zu ",id.c_str(),p);
+	bool ret = false;
 	if (propertyList.count(p) > 0)
 	{
-		T *val = (T *)propertyList[p]->get();
-		ret = *val;
-		delete(val);
-		found = true;
+		ret = static_cast<BoolProperty*>(propertyList[p])->get();
 	}
 	else
 	{
-		found = false;
 		ESP_LOGE(TAG,"property %zu not found in obj %s",p,id.c_str());
 	}
 	return ret;
 
 }
 
+float Base::getPropertyValueFloat(PropertyId p)
+{
+	float ret = 0.0f;
+	if (propertyList.count(p) > 0)
+	{
+		ret = static_cast<FloatProperty*>(propertyList[p])->get();
+	}
+	else
+	{
+		ESP_LOGE(TAG,"property %zu not found in obj %s",p,id.c_str());
+	}
+	return ret;
+
+}
+
+
+int Base::getPropertyValueInt(PropertyId p)
+{
+	int ret = 0;
+	if (propertyList.count(p) > 0)
+	{
+		ret = static_cast<IntProperty*>(propertyList[p])->get();
+	}
+	else
+	{
+		ESP_LOGE(TAG,"property %zu not found in obj %s",p,id.c_str());
+	}
+	return ret;
+
+}
 
 string Base::getPropertyValueString(PropertyId p, bool raw)
 {
@@ -336,22 +355,22 @@ Property::SetResult Base::setProperyValueFromString(string propId, string value)
 				case VALUE_TYPE_BOOL:
 					if (value=="true")
 					{
-						retVal = setPropertyValue<bool>(pId,true);
+						retVal = setPropertyValueBool(pId,true);
 					}
 					else
 					{
-						retVal = setPropertyValue<bool>(pId,false);
+						retVal = setPropertyValueBool(pId,false);
 					}
 					break;
 				case VALUE_TYPE_FLOAT:
-					retVal = setPropertyValue<float>(pId,(float)atof(value.c_str()));
+					retVal = setPropertyValueFloat(pId,(float)atof(value.c_str()));
 					break;
 				case VALUE_TYPE_INTEGER:
 				case VALUE_TYPE_ENUM:
-					retVal = setPropertyValue<int>(pId,atoi(value.c_str()));
+					retVal = setPropertyValueInt(pId,atoi(value.c_str()));
 					break;
 				case VALUE_TYPE_STRING:
-					retVal = setPropertyValue<string>(pId,value);
+					retVal = setPropertyValueString(pId,value);
 					break;
 			}
 
@@ -370,29 +389,23 @@ Property::SetResult Base::setProperyValueFromString(string propId, string value)
 	}
 	return retVal;
 }
-template <typename T>
-Property::SetResult Base::setPropertyValue(PropertyId p, T val)
+
+Property::SetResult Base::setPropertyValueBool(PropertyId pid, bool val)
 {
 	Property::SetResult ret = Property::SET_OK;
-	if (propertyList.count(p) > 0)
+	if (propertyList.count(pid) > 0)
 	{
-		string old = propertyList[p]->toString();
-		ret = propertyList[p]->set((void*)&val);
-		bool changed = (old!=propertyList[p]->toString());
+		if (propertyList[pid]->getType()!=VALUE_TYPE_BOOL) return Property::SET_WRONG_TYPE;
+		BoolProperty * p = static_cast<BoolProperty*>(propertyList[pid]);
+		bool old = p->get();
+		ret = p->set(val);
+		bool changed = (old!=val);
 		if (ret==Property::SET_OK && changed)
 		{
-			persistance.changeNotify(id, p);
-			if (propertyList[p]->getPersistance())
+			persistance.changeNotify(id, pid);
+			if (p->getPersistance())
 			{
-				bool stored;
-				switch (propertyList[p]->getType())
-				{
-					case VALUE_TYPE_BOOL: stored = persistance.storeBool(id, p, *(bool*) &val); break;
-					case VALUE_TYPE_INTEGER: stored = persistance.storeInt(id, p, *(int*) &val); break;
-					case VALUE_TYPE_STRING: stored = persistance.storeString(id, p, *(string*) &val); break;
-					case VALUE_TYPE_FLOAT: stored = persistance.storeFloat(id, p, *(float*) &val); break;
-					case VALUE_TYPE_ENUM: stored = persistance.storeInt(id, p, *(int*) &val); break;
-				}
+				bool stored =  persistance.storeBool(id, pid, val);
 				if (!stored) {
 					ret = Property::SET_STORE_ERROR;
 				}
@@ -402,13 +415,82 @@ Property::SetResult Base::setPropertyValue(PropertyId p, T val)
 	return ret;
 }
 
-std::string Base::floatToString(float value, int decimals)
+Property::SetResult Base::setPropertyValueInt(PropertyId pid, int val)
 {
-    std::ostringstream oss;
-    oss << std::fixed << std::setprecision(decimals) << value;
-    return oss.str();
+	Property::SetResult ret = Property::SET_OK;
+	if (propertyList.count(pid) > 0)
+	{
+		if (propertyList[pid]->getType()!=VALUE_TYPE_INTEGER) return Property::SET_WRONG_TYPE;
+		IntProperty * p = static_cast<IntProperty*>(propertyList[pid]);
+		int old = p->get();
+		ret = p->set(val);
+		bool changed = (old!=val);
+		if (ret==Property::SET_OK && changed)
+		{
+			persistance.changeNotify(id, pid);
+			if (p->getPersistance())
+			{
+				bool stored =  persistance.storeInt(id, pid, val);
+				if (!stored) {
+					ret = Property::SET_STORE_ERROR;
+				}
+			}
+		}
+	}
+	return ret;
 }
 
+Property::SetResult Base::setPropertyValueString(PropertyId pid, const string &val)
+{
+	Property::SetResult ret = Property::SET_OK;
+	if (propertyList.count(pid) > 0)
+	{
+		if (propertyList[pid]->getType()!=VALUE_TYPE_STRING) return Property::SET_WRONG_TYPE;
+		StringProperty * p = static_cast<StringProperty*>(propertyList[pid]);
+		string old = p->get();
+		ret = p->set(val);
+		bool changed = (old!=val);
+		if (ret==Property::SET_OK && changed)
+		{
+			persistance.changeNotify(id, pid);
+			if (p->getPersistance())
+			{
+				bool stored =  persistance.storeString(id, pid, val);
+				if (!stored) {
+					ret = Property::SET_STORE_ERROR;
+				}
+			}
+		}
+	}
+	return ret;
+
+}
+
+
+Property::SetResult Base::setPropertyValueFloat(PropertyId pid, float val)
+{
+	Property::SetResult ret = Property::SET_OK;
+	if (propertyList.count(pid) > 0)
+	{
+		if (propertyList[pid]->getType()!=VALUE_TYPE_FLOAT) return Property::SET_WRONG_TYPE;
+		FloatProperty * p = static_cast<FloatProperty*>(propertyList[pid]);
+		float old = p->get();
+		ret = p->set(val);
+		bool changed = (old!=val);
+		if (ret==Property::SET_OK && changed)
+		{
+			persistance.changeNotify(id, pid);
+			if (p->getPersistance())
+			{
+				bool stored =  persistance.storeFloat(id, pid, val);
+				if (!stored) {
+					ret = Property::SET_STORE_ERROR;
+				}
+			}
+		}
+	}
+	return ret;
+}
 
 Property *Base::getProperty(string id)
 {

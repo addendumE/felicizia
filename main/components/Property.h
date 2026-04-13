@@ -3,7 +3,7 @@
 #include <functional>
 #include <sstream>
 #include <iomanip>
-
+#include <vector>
 using namespace std;
 using namespace Types;
 
@@ -25,66 +25,36 @@ public:
 		SET_INTERNAL_ERROR,
 		SET_NOTFOUND_ERROR,
 		SET_NOT_PROPERTY_ERROR,
-		SET_STORE_ERROR
+		SET_STORE_ERROR,
+		SET_WRONG_TYPE
 	};
 
-	Property(ValueType type, Mode mode):
-		type(type),
-		mode(mode)
-	{
-
-	};
-	virtual ~Property()
-	{
-	};
-
-	virtual auto get() -> void* = 0;;
-	virtual SetResult set(void *) = 0;
+	Property(ValueType type, Mode mode);
+	virtual ~Property();
+	
 	virtual string toString(bool raw = false) = 0;
-	ValueType getType(){return type;};
-	bool getPersistance(){return mode == MODE_WRITABLE_PERSISTENT;};
-	bool getWritable() {return mode != MODE_READONLY;};
-
+	ValueType getType();
+	bool getPersistance();
+	bool getWritable();
+protected:
+	string value;
 private:
 	ValueType type;
 	Mode mode;
+
 };
 
 class StringProperty:public Property
 {
 public:
 	using onSet = function <SetResult(string)>;
-	StringProperty(Mode mode = MODE_READONLY, onSet onSetCback = nullptr):
-		Property(VALUE_TYPE_STRING,mode),
-		onSetCback(onSetCback),
-		value("")
-	{};
-	virtual ~StringProperty(){};
-	void* get() override {
-		return new std::string(value);
-	}
-
-	string toString(bool raw) override {
-			return value;
-	}
-
-	SetResult set(void* _value) override {
-		SetResult ret = SET_OK;
-		std::string val = *static_cast<std::string*>(_value);
-		if(onSetCback)
-		{
-			ret = onSetCback(val);
-		}
-		if (ret == SET_OK)
-		{
-			value = val;
-		}
-		return ret;
-	}
-
+	StringProperty(Mode mode = MODE_READONLY, onSet onSetCback = nullptr);
+	virtual ~StringProperty();
+	string get();
+	string toString(bool raw);
+	SetResult set(const string &val);
 private:
 	onSet onSetCback;
-	string value;
 };
 
 
@@ -92,48 +62,13 @@ class FloatProperty:public Property
 {
 public:
 	using onSet = function <SetResult(float)>;
-	FloatProperty(Mode mode = MODE_READONLY, Unit unit = UNIT_NONE , int decimals = 2,onSet onSetCback = nullptr):
-		Property(VALUE_TYPE_FLOAT, mode),
-		onSetCback(onSetCback),
-		value(0.0f),
-		unit(unit),
-		decimals(decimals)
-	{};
-	virtual ~FloatProperty(){};
-	void* get() override {
-		return new float(value);
-	}
-
-	string toString(bool raw) override {
-		std::ostringstream oss;
-		if (raw)
-		{
-			oss << value;
-		}
-		else
-		{
-			oss << std::fixed << std::setprecision(decimals) << value<< " " << unitNames.at(unit);
-		}
-		return oss.str();
-	}
-
-	SetResult set(void* _value) override {
-		SetResult ret = SET_OK;
-		float val = *static_cast<float*>(_value);
-		if(onSetCback)
-		{
-			ret =  onSetCback(val);
-		}
-		if (ret == SET_OK)
-		{
-			value = val;
-		}
-		return ret;
-	}
-
+	FloatProperty(Mode mode = MODE_READONLY, Unit unit = UNIT_NONE , int decimals = 2,onSet onSetCback = nullptr);
+	virtual ~FloatProperty();
+	float get();
+	string toString(bool raw);
+	SetResult set(float &_val);
 private:
 	onSet onSetCback;
-	float value;
 	Unit unit;
 	int decimals;
 };
@@ -142,80 +77,27 @@ class IntProperty:public Property
 {
 public:
 	using onSet = function <SetResult(int)>;
-	IntProperty(Mode mode = MODE_READONLY, onSet onSetCback = nullptr):
-		Property(VALUE_TYPE_INTEGER, mode),
-		onSetCback(onSetCback),
-		value(0)
-	{};
-	virtual ~IntProperty(){};
-	void* get() override {
-			return new int(value);
-	}
-
-	string toString(bool raw) override {
-		return to_string(value);
-	}
-
-
-	SetResult set(void* _value) override {
-		SetResult ret = SET_OK;
-		int val = *static_cast<int*>(_value);
-		if(onSetCback)
-		{
-			ret = onSetCback(val);
-		}
-		if (ret == SET_OK)
-		{
-			value = val;
-		}
-		return ret;
-	}
-
+	IntProperty(Mode mode = MODE_READONLY, onSet onSetCback = nullptr);
+	virtual ~IntProperty();
+	int get();
+	string toString(bool raw);
+	SetResult set(int _value);
 private:
 	onSet onSetCback;
-	int value;
 };
 
 class BoolProperty:public Property
 {
 public:
 	using onSet = function <SetResult(bool)>;
-	BoolProperty(Mode mode = MODE_READONLY, onSet onSetCback = nullptr, string trues="true", string falses="false"):
-		Property(VALUE_TYPE_BOOL, mode),
-		onSetCback(onSetCback),
-		value(false),
-		trues(trues),
-		falses(falses)
-	{};
-	virtual ~BoolProperty(){};
-	void* get() override {
-		return new bool(value);
-	}
-
-	string toString(bool raw) override {
-		if (raw)
-			return (value) ? "true":"false";
-		else
-			return (value) ? trues:falses;
-	}
-
-	SetResult set(void* _value) override {
-		SetResult ret = SET_OK;
-		bool val = *static_cast<bool*>(_value);
-		if(onSetCback)
-		{
-			ret = onSetCback(val);
-		}
-		if (ret == SET_OK)
-		{
-			value = val;
-		}
-		return ret;
-	}
+	BoolProperty(Mode mode = MODE_READONLY, onSet onSetCback = nullptr, string trues="true", string falses="false");
+	virtual ~BoolProperty();
+	bool get();
+	string toString(bool raw);
+	SetResult set(bool _value);
 
 private:
 	onSet onSetCback;
-	bool value;
 	string trues;
 	string falses;
 };
@@ -224,46 +106,14 @@ class EnumProperty:public Property
 {
 public:
 	using onSet = function <SetResult(int)>;
-	EnumProperty(Mode mode = MODE_READONLY, onSet onSetCback = nullptr, vector <string> *_strings = NULL):
-		Property(VALUE_TYPE_ENUM, mode),
-		onSetCback(onSetCback),
-		value(0)
-	{
-		if (_strings)
-		{
-			strings = *_strings;
-		}
-	};
-	virtual ~EnumProperty(){};
-	void* get() override {
-		return new int(value);
-	}
-
-	string toString(bool raw) override {
-		if (raw)
-			return(to_string(value));
-		else
-			return strings.at(value);
-	}
-	vector <string> & getStrings() {return strings;}
-
-	SetResult set(void* _value) override {
-		SetResult ret = SET_OK;
-		int val = *static_cast<int*>(_value);
-		if(onSetCback)
-		{
-			ret = onSetCback(val);
-		}
-		if (ret == SET_OK)
-		{
-			value = val;
-		}
-		return ret;
-	}
-
+	EnumProperty(Mode mode = MODE_READONLY, onSet onSetCback = nullptr, vector <string> *_strings = NULL);
+	virtual ~EnumProperty();
+	int get();
+	string toString(bool raw);
+	vector <string> & getStrings();
+	SetResult set(int _value);
 private:
 	onSet onSetCback;
-	int value;
 	vector <string> strings;
 };
 

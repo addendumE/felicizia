@@ -98,11 +98,10 @@ cJSON *ObjManager::getObjectList()
 	cJSON *jOut = cJSON_CreateArray();
 	for (auto item:objects)
 	{
-		bool found;
 		cJSON *jItem = cJSON_CreateObject();
 		cJSON_AddStringToObject(jItem, "id", item.second->getId().c_str());
-		cJSON_AddStringToObject(jItem, "type", item.second->getPropertyValue<string>(PROP_TYPE,found).c_str());
-		cJSON_AddStringToObject(jItem, "name", item.second->getPropertyValue<string>(PROP_NAME,found).c_str());
+		cJSON_AddStringToObject(jItem, "type", item.second->getPropertyValueString(PROP_TYPE).c_str());
+		cJSON_AddStringToObject(jItem, "name", item.second->getPropertyValueString(PROP_NAME).c_str());
 		cJSON_AddStringToObject(jItem, "svalue", item.second->getPropertyValueString(PROP_VALUE).c_str());
 		cJSON_AddStringToObject(jItem, "override", item.second->getPropertyValueString(PROP_OVERRIDE).c_str());
 		cJSON_AddStringToObject(jItem, "fail", item.second->getPropertyValueString(PROP_FAIL).c_str());

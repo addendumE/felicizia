@@ -13,11 +13,10 @@ AnalogInput::AnalogInput(string id,string name,Persistance &p, Unit unit, int de
 	addFloatProperty(PROP_FILTER,Property::MODE_WRITABLE_PERSISTENT,1.0,UNIT_NONE,2);
 	addFloatProperty(PROP_OVERRIDE_VALUE,Property::MODE_WRITABLE_PERSISTENT, _default,unit,decimals,
 			[&](float ov) {
-				bool found;
-				bool _override = getPropertyValue<bool>(PROP_OVERRIDE,found);
+				bool _override = getPropertyValueBool(PROP_OVERRIDE);
 				if (_override)
 				{
-					setPropertyValue<float>(PROP_VALUE,ov);
+					setPropertyValueFloat(PROP_VALUE,ov);
 				}
 				return Property::SET_OK;
 			});
@@ -25,9 +24,8 @@ AnalogInput::AnalogInput(string id,string name,Persistance &p, Unit unit, int de
 			[=,this](bool ov) {
 				if (ov)
 				{
-					bool found;
-					float val = getPropertyValue<float>(PROP_OVERRIDE_VALUE,found);
-					setPropertyValue<float>(PROP_VALUE,val);
+					float val = getPropertyValueFloat(PROP_OVERRIDE_VALUE);
+					setPropertyValueFloat(PROP_VALUE,val);
 				}
 				return Property::SET_OK;
 			}
@@ -43,34 +41,29 @@ AnalogInput::~AnalogInput() {
 
 void AnalogInput::setValue(float val,bool fail)
 {
-
-	bool _found;
-	float cal_gain =  getPropertyValue<float>(PROP_CAL_GAIN,_found);
-	float cal_offset = getPropertyValue<float>(PROP_CAL_OFFSET,_found);
+	float cal_gain =  getPropertyValueFloat(PROP_CAL_GAIN);
+	float cal_offset = getPropertyValueFloat(PROP_CAL_OFFSET);
 	val = cal_offset + (val * cal_gain);
 
-	bool _override = getPropertyValue<bool>(PROP_OVERRIDE,_found);
+	bool _override = getPropertyValueBool(PROP_OVERRIDE);
 	if (_override)
 	{
-		val = getPropertyValue<float>(PROP_OVERRIDE_VALUE,_found);
-		setPropertyValue<bool>(PROP_FAIL,false);
-		setPropertyValue<float>(PROP_VALUE,val);
+		val = getPropertyValueFloat(PROP_OVERRIDE_VALUE);
+		setPropertyValueFloat(PROP_FAIL,false);
+		setPropertyValueFloat(PROP_VALUE,val);
 	}
 	else
 	{
-		setPropertyValue<bool>(PROP_FAIL,fail);
-		bool _found;
-		float flt =getPropertyValue<float>(PROP_FILTER,_found);
-		float old = getPropertyValue<float>(PROP_VALUE,_found);
+		setPropertyValueBool(PROP_FAIL,fail);
+		float flt =getPropertyValueFloat(PROP_FILTER);
+		float old = getPropertyValueFloat(PROP_VALUE);
 		if (flt >1.0f ) flt = 1.0f;
 		val = val*flt+old*(1.0f-flt);
-		setPropertyValue<float>(PROP_VALUE,val);
+		setPropertyValueFloat(PROP_VALUE,val);
 	}
-	//ESP_LOGI(TAG,"set %f [%d]",val,fail);
 }
 
 float AnalogInput::getValue()
 {
-	bool _found;
-	return getPropertyValue<float>(PROP_VALUE,_found);
+	return getPropertyValueFloat(PROP_VALUE);
 }

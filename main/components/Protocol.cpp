@@ -186,6 +186,7 @@ Protocol::handleResult Protocol::handleProperySet(cJSON *jReq,cJSON **jResp)
 				case Property::SET_NOTFOUND_ERROR: error="NOTFOUND"; break;
 				case Property::SET_NOT_PROPERTY_ERROR: error="NOT PROPERTY"; break;
 				case Property::SET_STORE_ERROR: error="STORE PROPERTY"; break;
+				case Property::SET_WRONG_TYPE: error="WRONG TYPE"; break;
 				case Property::SET_OK: break;
 			}
 			*jResp = cJSON_CreateObject();

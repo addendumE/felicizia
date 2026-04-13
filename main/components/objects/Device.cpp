@@ -23,5 +23,5 @@ Device::~Device() {
 
 void Device::setFreeHeap(float fh)
 {
-	setPropertyValue<float>(PROP_FREE_HEAP,fh);
+	setPropertyValueFloat(PROP_FREE_HEAP,fh);
 }

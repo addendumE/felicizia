@@ -31,12 +31,15 @@ public:
 	cJSON * get();
 	map <PropertyId,Property *> getProperties() {return propertyList;};
 	string getId() {return id;};
-	template <typename T>
-	T getPropertyValue(PropertyId, bool &);
+	bool getPropertyValueBool(PropertyId);
+	Property::SetResult setPropertyValueBool(PropertyId pid, bool val);
+	int getPropertyValueInt(PropertyId);
+	Property::SetResult setPropertyValueInt(PropertyId pid, int val);
+	float getPropertyValueFloat(PropertyId);
+	Property::SetResult setPropertyValueFloat(PropertyId pid, float val);
 	string getPropertyValueString(PropertyId, bool raw=false);
+	Property::SetResult setPropertyValueString(PropertyId pid, const string &val);
 	cJSON * getPropertyJson(PropertyId pId);
-	template <typename T>
-	Property::SetResult setPropertyValue(PropertyId p, T val);
 	Property::SetResult setProperyValueFromString(string propId, string value);
 	Property *getProperty(string);
 
