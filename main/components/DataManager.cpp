@@ -351,7 +351,7 @@ void DataManager::loop()
         ledErrorePompaFosso.setValue(false);
         ledErrorePompaSerbatoio.setValue(false);
         doOutput();
-        if (++loopCnt % 10 == 0)
+        if (++loopCnt % 60 == 0)
         {
             ts.clean();
             ts.setValue(1,vbatt.getValue());

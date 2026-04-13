@@ -12,7 +12,8 @@ Http::~Http() {
 	// TODO Auto-generated destructor stub
 }
 
-
+#include "esp_tls.h"
+#include "esp_crt_bundle.h"
 int Http::getSynch(const std::string url, std::string &_resp,int port)
 {
 	esp_http_client_config_t config={};
@@ -25,11 +26,10 @@ int Http::getSynch(const std::string url, std::string &_resp,int port)
 	config.event_handler = Http_EventHandler;
 	config.user_data = (void*)this;
 	config.timeout_ms = 10000;
-	config.skip_cert_common_name_check = true;
-    config.transport_type = HTTP_TRANSPORT_OVER_TCP;
-
+//	config.skip_cert_common_name_check = true;
+    config.transport_type = HTTP_TRANSPORT_OVER_SSL;
+    config.crt_bundle_attach = esp_crt_bundle_attach,
     client = esp_http_client_init (&config);
-	printf ("\n************** %lu ***************\n",esp_get_free_heap_size());
     if (client == NULL)
     {
     	ESP_LOGE (TAG,"Errore creazione client");
