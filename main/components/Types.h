@@ -24,7 +24,8 @@ namespace Types
 		UNIT_PERCENT,
 		UNIT_CONDUCTIVITY,
 		UNIT_HOURS,
-		UNIT_MINUTES
+		UNIT_MINUTES,
+		UNIT_SECONDS
 	};
 
 	enum ValueType
@@ -60,7 +61,8 @@ namespace Types
 		PROP_SSID_KEY,
 		PROP_TS_KEY,
 		PROP_SW_VERSION,
-		PROP_FILTER
+		PROP_FILTER,
+		PROP_FEEDBACK
 	};
 
 extern const map<Type,string> typeNames;

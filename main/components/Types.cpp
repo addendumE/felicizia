@@ -9,7 +9,8 @@ const map<Unit,string> Types::unitNames = {
    {UNIT_PERCENT, "%"},
    {UNIT_CONDUCTIVITY,"uS/cm"},
    {UNIT_HOURS,"h"},
-   {UNIT_MINUTES,"min"}
+   {UNIT_MINUTES,"min"},
+   {UNIT_SECONDS,"s"}
 };
 
 const map<PropertyId,string> Types::propertyNames = {
@@ -33,7 +34,9 @@ const map<PropertyId,string> Types::propertyNames = {
    {PROP_SSID_KEY,"ssid_key"},
    {PROP_TS_KEY,"ts_key"},
    {PROP_SW_VERSION,"sw_version"},
-   {PROP_FILTER,"filter"}
+   {PROP_FILTER,"filter"},
+   {PROP_FEEDBACK,"feedback"}
+
 };
 
 const map<Type,string> Types::typeNames = {

@@ -32,8 +32,8 @@ int Http::getSynch(const std::string url, std::string &resp, int port)
 		if (curl_code == CURLE_OK)
 		{
 		    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
-		    if (http_code != 200)
-		    	ESP_LOGW(TAG, "returned %d",http_code);
+		    //if (http_code != 200)
+		    //ESP_LOGW(TAG, "returned %d",http_code);
 		}
 		else
 		{

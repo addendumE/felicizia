@@ -47,10 +47,10 @@ ThingSpeak::~ThingSpeak()
 int ThingSpeak::publish(const string &key)
 {
 	string payload = "https://api.thingspeak.com/update?api_key="+ key+"&"+getString();
-	ESP_LOGI(TAG,"URL:%s",payload.c_str());
+//	ESP_LOGI(TAG,"URL:%s",payload.c_str());
 	string resp;
 	int ret = getSynch(payload, resp, 443);
-	ESP_LOGI(TAG,"RESP:%d",ret);
+//	ESP_LOGI(TAG,"RESP:%d",ret);
 	//lastRes="["+to_string(ret)+"] "+ getHeaders()["Date"];
 	return ret;
 }

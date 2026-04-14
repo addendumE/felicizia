@@ -3,6 +3,7 @@
 #include "Persistance.h"
 #include "AnalogInput.h"
 #include "DigitalOutput.h"
+#include "DigitalOutputFeedback.h"
 #include "DigitalInput.h"
 #include "Device.h"
 #include "Threshold.h"
@@ -70,8 +71,8 @@ private:
     Threshold tensioneBatteriaOk;
     Threshold temperaturaAriaOk;
     Threshold conducibilitaOk;
-    DigitalOutput cmdPompaRiempimento;
-    DigitalOutput cmdPompaIrrigazione;
+    DigitalOutputFeedback cmdPompaRiempimento;
+    DigitalOutputFeedback cmdPompaIrrigazione;
     DigitalOutput ledAlive;
     DigitalOutput ledLowBatt;
     DigitalOutput ledLowFosso;

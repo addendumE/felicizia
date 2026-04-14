@@ -348,8 +348,8 @@ void DataManager::loop()
         ledLowTaria.setValue(!temperaturaAriaOk.getValue());
         ledLowSerbatoio.setValue(!livIrrigazioneOk.getValue());
         ledTorbidita.setValue(!conducibilitaOk.getValue());
-        ledErrorePompaFosso.setValue(false);
-        ledErrorePompaSerbatoio.setValue(false);
+        ledErrorePompaFosso.setValue(cmdPompaRiempimento.getFail());
+        ledErrorePompaSerbatoio.setValue(cmdPompaIrrigazione.getFail());
         doOutput();
         if (++loopCnt % 60 == 0)
         {
