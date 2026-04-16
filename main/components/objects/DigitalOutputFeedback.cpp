@@ -37,7 +37,6 @@ void DigitalOutputFeedback::setValue(bool val)
 	oldVal = val;
 
 	time_t delta = time(NULL) - tOn;
-	printf("BOF %d %d %d\n",val,fail,delta);
 	int flt = (int)getPropertyValueInt(PROP_FILTER);
 	bool feed = getPropertyValueBool(PROP_FEEDBACK);
 
