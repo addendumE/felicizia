@@ -104,5 +104,5 @@ private:
     bool adcRead(ads111x_mux_t mux, float &res);
     void doInput();
     void doOutput();
-    bool pompa_on(int irrigazioni_al_giorno, int durata_secondi);
+    bool pompa_on(int irrigazioni_al_giorno, int durata_secondi, int start, int end);
 };

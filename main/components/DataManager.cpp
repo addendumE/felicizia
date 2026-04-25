@@ -275,15 +275,9 @@ void DataManager::doOutput()
     last_state = state;
 }
 
-bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi) {
+bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi, int start, int end) {
     if (irrigazioni_al_giorno <= 0 || durata_secondi <= 0)
         return false;
-
-    // Tempo totale in un giorno (secondi)
-    int secondi_giorno = 24 * 60 * 60;
-
-    // Intervallo tra una irrigazione e l'altra
-    int intervallo = secondi_giorno / irrigazioni_al_giorno;
 
     // Ottieni l'orario corrente
     time_t now = time(NULL);
@@ -294,18 +288,52 @@ bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi) {
         t->tm_min * 60 +
         t->tm_sec;
 
-    // Controlla se siamo dentro una finestra di irrigazione
-    for (int i = 0; i < irrigazioni_al_giorno; i++) {
-        int inizio = i * intervallo;
-        int fine = inizio + durata_secondi;
+    // Converte start/end da minuti a secondi
+    int start_sec = start * 60;
+    int end_sec   = end * 60;
 
-        if (secondi_da_mezzanotte >= inizio &&
-            secondi_da_mezzanotte < fine) {
-            return true; // pompa ON
+    // Calcola durata finestra (gestendo mezzanotte)
+    int durata_finestra;
+    if (start_sec <= end_sec) {
+        durata_finestra = end_sec - start_sec;
+    } else {
+        durata_finestra = (24 * 3600 - start_sec) + end_sec;
+    }
+
+    if (durata_finestra <= 0)
+        return false;
+
+    // Verifica se siamo dentro la finestra
+    int tempo_relativo;
+    if (start_sec <= end_sec) {
+        if (secondi_da_mezzanotte < start_sec || secondi_da_mezzanotte >= end_sec)
+            return false;
+        tempo_relativo = secondi_da_mezzanotte - start_sec;
+    } else {
+        // attraversa mezzanotte
+        if (secondi_da_mezzanotte >= start_sec) {
+            tempo_relativo = secondi_da_mezzanotte - start_sec;
+        } else if (secondi_da_mezzanotte < end_sec) {
+            tempo_relativo = (24 * 3600 - start_sec) + secondi_da_mezzanotte;
+        } else {
+            return false;
         }
     }
 
-    return false; // pompa OFF
+    // Intervallo tra irrigazioni dentro la finestra
+    int intervallo = durata_finestra / irrigazioni_al_giorno;
+
+    // Controlla slot
+    for (int i = 0; i < irrigazioni_al_giorno; i++) {
+        int inizio = i * intervallo;
+        int fine   = inizio + durata_secondi;
+
+        if (tempo_relativo >= inizio && tempo_relativo < fine) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void DataManager::loop()
@@ -339,18 +367,22 @@ void DataManager::loop()
             tensioneBatteriaOk.getValue() &&
             livSvuotamentoCanaleOk.getValue() &&
             livRiempimentoSerbatoioOk.getValue() &&
-            orarioOk.getValue()
+            orarioOk.getValue() &&
+            !cmdPompaIrrigazione.getValue()
         );
 
+        float start,end;
+        orarioOk.getThValue(start,end);
         cmdPompaIrrigazione.setValue(
             temperaturaAriaOk.getValue() &&
             tensioneBatteriaOk.getValue() &&
             livIrrigazioneOk.getValue() &&
             pompa_on(
                 (int)numeroIrrigazioni.getValue(),
-                (int)tempoIrrigazione.getValue()*60
-            ) &&
-            orarioOk.getValue()
+                (int)tempoIrrigazione.getValue()*60,
+                start,
+                end
+            )
         );
 
         ledAlive.setValue(!ledAlive.getValue());
