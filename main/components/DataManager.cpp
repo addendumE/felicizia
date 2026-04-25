@@ -36,6 +36,7 @@ livIrrigazioneOk("livIrrigOk","serbatoio pronto a svuotamento",persistance,UNIT_
 tensioneBatteriaOk("vBattOk","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
 temperaturaAriaOk("tempAriaOk","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
 conducibilitaOk("sccmOk","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_IN),
+orarioOk("sccmOk","orario ok",persistance,UNIT_MINUTES,0,false,Threshold::MODE_IN),
 cmdPompaRiempimento("cmdPriemp","comando pompa riempimento",persistance,false),
 cmdPompaIrrigazione("cmdPirrig","comando pompa irrigazione",persistance,false),
 ledAlive("ledAlive","led alive",persistance,false),
@@ -68,6 +69,7 @@ oldOut({})
     om.addObject(&tensioneBatteriaOk);
     om.addObject(&temperaturaAriaOk);
     om.addObject(&conducibilitaOk);
+    om.addObject(&orarioOk);
     om.addObject(&cmdPompaRiempimento);
     om.addObject(&cmdPompaIrrigazione);
     om.addObject(&ledAlive);
@@ -325,11 +327,19 @@ void DataManager::loop()
 
         conducibilitaOk.setValue(sccm.getValue());
 
+
+        // Ottieni l'orario corrente
+        time_t now = time(NULL);
+        struct tm *t = localtime(&now);
+        int minuti_da_mezzanotte = t->tm_hour * 60 + t->tm_min * 60;
+        orarioOk.setValue(minuti_da_mezzanotte);
+
         cmdPompaRiempimento.setValue(
             temperaturaAriaOk.getValue() &&
             tensioneBatteriaOk.getValue() &&
             livSvuotamentoCanaleOk.getValue() &&
-            livRiempimentoSerbatoioOk.getValue()
+            livRiempimentoSerbatoioOk.getValue() &&
+            orarioOk.getValue()
         );
 
         cmdPompaIrrigazione.setValue(
@@ -339,7 +349,8 @@ void DataManager::loop()
             pompa_on(
                 (int)numeroIrrigazioni.getValue(),
                 (int)tempoIrrigazione.getValue()*60
-            )
+            ) &&
+            orarioOk.getValue()
         );
 
         ledAlive.setValue(!ledAlive.getValue());

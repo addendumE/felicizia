@@ -71,6 +71,7 @@ private:
     Threshold tensioneBatteriaOk;
     Threshold temperaturaAriaOk;
     Threshold conducibilitaOk;
+    Threshold orarioOk;
     DigitalOutputFeedback cmdPompaRiempimento;
     DigitalOutputFeedback cmdPompaIrrigazione;
     DigitalOutput ledAlive;
