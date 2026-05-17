@@ -1,0 +1,7 @@
+VER_1_1
+    prima versione
+VER_1_2
+    - aggiunta gestione finestra orario inizio e fine irrigazione
+    - ts publish ogni 10 minuti invece che ogni min
+VER_1_3
+    - sincronizzazione ntp al boot,timezione roma

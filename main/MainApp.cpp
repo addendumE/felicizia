@@ -5,6 +5,7 @@ static const char * TAG="APP";
 
 #ifndef LINUX_PLATFORM
 #include "esp_system.h"
+#include "esp_sntp.h"
 #endif
 
 
@@ -71,10 +72,20 @@ void MainApp::start()
 void MainApp::onMode(WifiManager::Mode mode)
 {
 	ESP_LOGI(TAG,"wifi mode now is: %d",mode);
+	if (mode == WifiManager::WIFI_CLI_OK)
+	{
+#ifndef LINUX_PLATFORM
+		ESP_LOGI(TAG, "Initializing SNTP");
+		sntp_setoperatingmode(SNTP_OPMODE_POLL);
+		sntp_setservername(0, "pool.ntp.org");
+		sntp_init();
+		setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
+		tzset();
+#endif
+	}
 	if (mode == WifiManager::WIFI_CLI_FAIL)
 	{
 		vTaskDelay(pdMS_TO_TICKS(1000));
 		join();
 	}
 }
-

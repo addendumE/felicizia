@@ -36,7 +36,7 @@ livIrrigazioneOk("livIrrigOk","serbatoio pronto a svuotamento",persistance,UNIT_
 tensioneBatteriaOk("vBattOk","batteria ok",persistance,UNIT_VOLTAGE,1,false,Threshold::MODE_OVER),
 temperaturaAriaOk("tempAriaOk","temperatura aria ok",persistance,UNIT_TEMPERATURE,1,false,Threshold::MODE_OVER),
 conducibilitaOk("sccmOk","conducibilità ok",persistance,UNIT_CONDUCTIVITY,1,false,Threshold::MODE_IN),
-orarioOk("sccmOk","orario ok",persistance,UNIT_MINUTES,0,false,Threshold::MODE_IN),
+orarioOk("orarioOk","orario ok",persistance,UNIT_HOURS,2,false,Threshold::MODE_IN),
 cmdPompaRiempimento("cmdPriemp","comando pompa riempimento",persistance,false),
 cmdPompaIrrigazione("cmdPirrig","comando pompa irrigazione",persistance,false),
 ledAlive("ledAlive","led alive",persistance,false),
@@ -275,7 +275,7 @@ void DataManager::doOutput()
     last_state = state;
 }
 
-bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi, int start, int end) {
+bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi, float start, float end) {
     if (irrigazioni_al_giorno <= 0 || durata_secondi <= 0)
         return false;
 
@@ -288,9 +288,9 @@ bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi, int st
         t->tm_min * 60 +
         t->tm_sec;
 
-    // Converte start/end da minuti a secondi
-    int start_sec = start * 60;
-    int end_sec   = end * 60;
+    // Converte start/end da ore a secondi
+    int start_sec = (int)(start * 3600.0f);
+    int end_sec   = (int)(end * 3600.0f);
 
     // Calcola durata finestra (gestendo mezzanotte)
     int durata_finestra;
@@ -359,8 +359,8 @@ void DataManager::loop()
         // Ottieni l'orario corrente
         time_t now = time(NULL);
         struct tm *t = localtime(&now);
-        int minuti_da_mezzanotte = t->tm_hour * 60 + t->tm_min * 60;
-        orarioOk.setValue(minuti_da_mezzanotte);
+        float ore_da_mezzanotte = t->tm_hour + (t->tm_min / 60.0f) + (t->tm_sec / 3600.0f);
+        orarioOk.setValue(ore_da_mezzanotte);
 
         cmdPompaRiempimento.setValue(
             temperaturaAriaOk.getValue() &&
@@ -394,7 +394,7 @@ void DataManager::loop()
         ledErrorePompaFosso.setValue(cmdPompaRiempimento.getFail());
         ledErrorePompaSerbatoio.setValue(cmdPompaIrrigazione.getFail());
         doOutput();
-        if (++loopCnt % 60 == 0)
+        if (++loopCnt % 600 == 0)
         {
             ts.clean();
             ts.setValue(1,vbatt.getValue());
