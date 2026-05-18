@@ -28,7 +28,7 @@ void Protocol::propChangeNotification(const string objId,Types::PropertyId id)
 
 	if (jProp)
 	{
-		string sid = objId+"_"+propertyNames.at(id);
+		string sid = objId+"_"+getPropertyName(id);
 		cJSON_AddStringToObject(jProp, "id", sid.c_str());
 		cJSON_AddItemToObject(jResp, "data", jProp);
 		cJSON_AddStringToObject(jResp, "id", "propChange");

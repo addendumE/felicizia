@@ -74,7 +74,7 @@ FloatProperty::FloatProperty(Mode mode, Unit unit, int decimals,onSet onSetCback
 		}
 		else
 		{
-			snprintf(buff,sizeof(buff),"%.*f %s",decimals,val,unitNames.at(unit).c_str());
+			snprintf(buff,sizeof(buff),"%.*f %s",decimals,val,getUnitName(unit));
 
 			
 		}

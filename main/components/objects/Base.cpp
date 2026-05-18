@@ -11,7 +11,7 @@ Base::Base(Type _type, string id,string _name, Persistance &persistance):
 		id(id),
 		persistance(persistance)
 {
-	addStringProperty(PROP_TYPE,Property::MODE_READONLY,typeNames.at(_type));
+	addStringProperty(PROP_TYPE,Property::MODE_READONLY,getTypeName(_type));
 	addStringProperty(PROP_NAME,Property::MODE_READONLY,_name);
 }
 
@@ -26,11 +26,11 @@ bool Base::addFloatProperty(PropertyId p, Property::Mode mode, float _default, U
 	{
 		if (!persistance.loadFloat(id, p, _default))
 		{
-			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),propertyNames.at(p).c_str());
+			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),getPropertyName(p));
 		}
 	}
 	setPropertyValueFloat(p,_default);
-	//ESP_LOGW(TAG,"%s.%s added with value %f",id.c_str(),propertyNames.at(p).c_str(),_default);
+	//ESP_LOGW(TAG,"%s.%s added with value %f",id.c_str(),getPropertyName(p),_default);
 	return true;
 }
 bool Base::addStringProperty(PropertyId p, Property::Mode mode, string _default, StringProperty::onSet onSetCback)
@@ -42,11 +42,11 @@ bool Base::addStringProperty(PropertyId p, Property::Mode mode, string _default,
 	{
 		if (!persistance.loadString(id, p, _default))
 		{
-			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),propertyNames.at(p).c_str());
+			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),getPropertyName(p));
 		}
 	}
 	setPropertyValueString(p,_default);
-	//ESP_LOGW(TAG,"%s.%s added with value %s",id.c_str(),propertyNames.at(p).c_str(),_default.c_str());
+	//ESP_LOGW(TAG,"%s.%s added with value %s",id.c_str(),getPropertyName(p),_default.c_str());
 	return true;
 }
 
@@ -58,11 +58,11 @@ bool Base::addIntProperty(PropertyId p,Property::Mode mode,  int _default, IntPr
 	{
 		if (!persistance.loadInt(id, p, _default))
 		{
-			ESP_LOGW(TAG,"%s.%s ",id.c_str(),propertyNames.at(p).c_str());
+			ESP_LOGW(TAG,"%s.%s ",id.c_str(),getPropertyName(p));
 		}
 	}
 	setPropertyValueInt(p,_default);
-	ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
+	ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),getPropertyName(p),_default);
 	return true;
 }
 
@@ -74,11 +74,11 @@ bool Base::addEnumProperty(PropertyId p,Property::Mode mode,  int _default,  vec
 	{
 		if (!persistance.loadInt(id, p, _default))
 		{
-			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),propertyNames.at(p).c_str());
+			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),getPropertyName(p));
 		}
 	}
 	setPropertyValueInt(p,_default);
-	//ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
+	//ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),getPropertyName(p),_default);
 	return true;
 }
 
@@ -90,11 +90,11 @@ bool Base::addBoolProperty(PropertyId p,  Property::Mode mode, bool _default , s
 	{
 		if (!persistance.loadBool(id, p, _default))
 		{
-			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),propertyNames.at(p).c_str());
+			ESP_LOGW(TAG,"%s.%s no persit value found",id.c_str(),getPropertyName(p));
 		}
 	}
 	setPropertyValueBool(p,_default);
-	//ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),propertyNames.at(p).c_str(),_default);
+	//ESP_LOGW(TAG,"%s.%s added with value %d",id.c_str(),getPropertyName(p),_default);
 	return true;
 }
 
@@ -199,7 +199,7 @@ cJSON * Base::get()
 	for (auto p:propertyList)
 	{
 		cJSON *jItem = getPropertyJson(p.first);
-		cJSON_AddItemToObject(jOut, propertyNames.at(p.first).c_str(), jItem);
+		cJSON_AddItemToObject(jOut, getPropertyName(p.first), jItem);
 	}
     return jOut;
 }
@@ -260,7 +260,7 @@ bool Base::setProperty(string data)
 
 	 for (auto p:propertyList)
 	 {
-		 if (propertyNames.at(p.first)==string(jObj->string))
+		 if (getPropertyName(p.first)==string(jObj->string))
 		{
 			ret = setProperty(p.first,jObj);
 
@@ -336,12 +336,13 @@ Property::SetResult Base::setProperyValueFromString(string propId, string value)
 	Property::SetResult retVal = Property::SET_INTERNAL_ERROR;
 	bool ret = false;
 	PropertyId pId;
-	for (auto p:propertyNames)
+	for (int i = 0; i < propertyEntriesCount; i++)
 	{
-		if (p.second == propId)
+		auto &p = propertyEntries[i];
+		if (p.name == propId)
 		{
 			ret = true;
-			pId = p.first;
+			pId = p.id;
 			break;
 		}
 	}
@@ -495,13 +496,14 @@ Property::SetResult Base::setPropertyValueFloat(PropertyId pid, float val)
 Property *Base::getProperty(string id)
 {
 	Property * ret = nullptr;
-	for (auto p:propertyNames)
+	for (int i = 0; i < propertyEntriesCount; i++)
 	{
-		if (p.second == id)
+		auto &p = propertyEntries[i];
+		if (p.name == id)
 		{
-			if (propertyList.count(p.first)>0)
+			if (propertyList.count(p.id)>0)
 			{
-				ret = propertyList.at(p.first);
+				ret = propertyList.at(p.id);
 				//ESP_LOGI(TAG,"property %s found",id.c_str());
 			}
 			else

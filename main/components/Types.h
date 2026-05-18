@@ -1,7 +1,5 @@
 #pragma once
-#include <map>
-#include <string>
-using namespace std;
+
 namespace Types
 {
 	enum Type
@@ -65,7 +63,26 @@ namespace Types
 		PROP_FEEDBACK
 	};
 
-extern const map<Type,string> typeNames;
-extern const map<PropertyId,string> propertyNames;
-extern const map<Unit,string> unitNames;
+	struct PropertyEntry {
+		PropertyId id;
+		const char* name;
+	};
+
+	struct TypeEntry {
+		Type type;
+		const char* name;
+	};
+
+	extern const TypeEntry typeEntries[];
+	extern const int typeEntriesCount;
+	
+	extern const PropertyEntry propertyEntries[];
+	extern const int propertyEntriesCount;
+	
+	extern const char* unitNames[];
+	extern const int unitNamesCount;
+
+	const char* getTypeName(Type type);
+	const char* getPropertyName(PropertyId propId);
+	const char* getUnitName(Unit unit);
 }

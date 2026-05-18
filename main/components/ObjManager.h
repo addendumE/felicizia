@@ -24,7 +24,7 @@ public:
 		if (oPnt)
 		{
 			
-			return getPropertyPtr(oPnt, propertyNames.at(propId));
+			return getPropertyPtr(oPnt, getPropertyName(propId));
 		}
 		else
 		{

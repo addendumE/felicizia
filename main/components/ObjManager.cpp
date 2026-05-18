@@ -31,7 +31,7 @@ void ObjManager::getConf(string &s)
 			if (iprop.second->getPersistance())
 			{
 				cJSON *jProp= cJSON_CreateString(iobj.second->getPropertyValueString(iprop.first,true).c_str());
-				cJSON_AddItemToObject(jProperties, propertyNames.at(iprop.first).c_str(), jProp);
+				cJSON_AddItemToObject(jProperties, getPropertyName(iprop.first), jProp);
 			}
 		}
 	}
@@ -130,12 +130,12 @@ cJSON *ObjManager::getObject(string id)
 cJSON *ObjManager::getObjectTypes()
 {
 	cJSON *jOut = cJSON_CreateArray();
-	for (auto item:Types::typeNames)
+	for (int i = 0; i < typeEntriesCount; ++i)
 	{
-		cJSON *jItem = cJSON_CreateString(item.second.c_str());
+		cJSON *jItem = cJSON_CreateString(typeEntries[i].name);
 		cJSON_AddItemToArray(jOut,jItem);
 	}
-	ESP_LOGI(TAG,"getObjectTypes returned %zu items",typeNames.size());
+	ESP_LOGI(TAG,"getObjectTypes returned %d items",typeEntriesCount);
 
 	return jOut;
 }

@@ -276,7 +276,7 @@
     // --- Utilities ---
     async function uploadFile(url, inputId, isConfig = false) {
         const file = document.getElementById(inputId).files[0];
-        if (!file) return alert("Seleziona un file");
+        if (!file) return alert("Seleziona un file")
 
         const headers = isConfig ? { "X-Filename": file.name } : {};
         
