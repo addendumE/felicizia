@@ -67,16 +67,18 @@ FloatProperty::FloatProperty(Mode mode, Unit unit, int decimals,onSet onSetCback
 
 	string FloatProperty::toString(bool raw) {
 		float val = get();
-		std::ostringstream oss;
+		char buff[128];
 		if (raw)
 		{
-			oss << val;
+			snprintf(buff,sizeof(buff),"%f",val);
 		}
 		else
 		{
-			oss << std::fixed << std::setprecision(decimals) << val<< " " << unitNames.at(unit);
+			snprintf(buff,sizeof(buff),"%.*f %s",decimals,val,unitNames.at(unit).c_str());
+
+			
 		}
-		return oss.str();
+		return string(buff);
 	}
 
 	Property::SetResult FloatProperty::set(float &_val)

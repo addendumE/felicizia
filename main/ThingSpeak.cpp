@@ -57,23 +57,22 @@ int ThingSpeak::publish(const string &key)
 
 std::string ThingSpeak::uriEscape(const std::string& input)
 {
-    std::ostringstream escaped;
-    escaped << std::hex << std::uppercase;
-
+    std::string escaped;
     for (unsigned char c : input)
     {
         // caratteri non da codificare (RFC 3986)
         if (std::isalnum(c) ||
             c == '-' || c == '_' || c == '.' || c == '~')
         {
-            escaped << c;
+            escaped += std::string((char*)&c);
         }
         else
         {
-            escaped << '%' << std::setw(2) << std::setfill('0')
-                     << (int)c;
+			char buf[4];
+   			snprintf(buf, sizeof(buf), "%%%02X", (int)c);
+   			escaped += std::string(buf);
         }
     }
 
-    return escaped.str();
+    return escaped;
 }

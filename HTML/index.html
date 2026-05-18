@@ -1,1 +1,313 @@
-<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><script src="/jquery.1.11.1.min.js"></script><link rel="stylesheet" href="jquery.mobile.1.4.5.min.css"><script src="/jquery.mobile.1.4.5.min.js"></script><style>td{vertical-align:middle!important}</style><div data-role="page" id="Main"><div data-role="header" data-position="fixed" data-id="global-header"><div data-role="navbar"><ul><li><a href="#Main" data-icon="home" class="ui-btn-active">Home</a><li><a href="#Log" data-icon="bullets">Log</a><li><a href="#Fup" data-icon="gear">Setting</a></ul></div></div><div data-role="content"><form class="ui-filterable"><input id="filterBasic-input" data-type="search"></form><table data-role="table" data-filter="true" data-input="#filterBasic-input" data-mode="none" class="ui-responsive table-stroke"><tbody id="mainList"></tbody><thead><tr><th onclick="sortTable(0)">Tipo<th onclick="sortTable(1)">Nome<th>Valore<th></thead></table></div></div><div data-role="page" id="Log"><div data-role="header" data-position="fixed" data-id="global-header"><div data-role="navbar"><ul><li><a href="#Main" data-icon="home">Home</a><li><a href="#Log" data-icon="bullets" class="ui-btn-active">Log</a><li><a href="#Fup" data-icon="gear">Setting</a></ul></div></div><div data-role="content"><table data-role="table" data-filter="true" data-input="#filterBasic-input" data-mode="none" class="ui-responsive table-stroke"><tbody id="logList"></tbody><thead><tr><th>TS<th>Event<th>Value</thead></table></div></div><div data-role="page" id="Fup"><div data-role="header" data-position="fixed" data-id="global-header"><div data-role="navbar"><ul><li><a href="#Main" data-icon="home">Home</a><li><a href="#Log" data-icon="bullets">Log</a><li><a href="#Fup" data-icon="gear" class="ui-btn-active">Setting</a></ul></div></div><div data-role="content"><h2>Manutenzione</h2><form id="uploadFw" data-ajax="false"><label for="fileInput1">Firmware upload</label> <input type="file" accept=".bin" id="fileInput1" data-clear-btn="true"> <button id="uploadBtn">Upload</button></form><form id="uploadConfig" data-ajax="false"><label for="uploadConfigFile">Seleziona file config:</label> <input type="file" name="uploadConfigFile" id="uploadConfigFile" accept=".conf" data-clear-btn="true"> <button type="submit">Carica config</button></form><a href="/api/readConf" data-role="button" data-inline="true" data-ajax="false" data-role="button">Scarica config</a></div></div><div data-role="page" id="Disconnected"><div data-role="content" id="connStatus"></div><a href="#" id="btnConnect" class="ui-btn ui-btn-b">Connect</a></div><div data-role="page" id="objDetails"><div data-role="header"><a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="notext">Back</a><h1 id="objName" style="text-align:center">My Page Title</h1></div><div role="main" class="ui-content"><table data-role="table" data-mode="none" class="ui-responsive table-stroke"><tbody id="propertyList"></table></div></div><script>var wsocket,ping;function sortTable(e){var t=document.querySelector("table tbody"),n=Array.from(t.rows);n.sort(function(t,n){var a=t.cells[e].innerText,i=n.cells[e].innerText;return a.localeCompare(i,void 0,{numeric:!0})}),n.forEach(e=>t.appendChild(e))}function wsConnect(){(wsocket=new WebSocket("ws://"+location.host,"ws")).addEventListener("close",function(){disconnected()}),wsocket.addEventListener("error",function(e){disconnected()}),wsocket.addEventListener("open",function(){$.mobile.changePage("#Main"),ping=window.setInterval(function(){sendRequest("ping")},5e3),sendRequest("getObjectList","getObjectList")}),wsocket.addEventListener("message",function(e){var t=JSON.parse(e.data);if("getObjectList"==t.id)handleObjectList(t.data);else if("getObjectTypes"==t.id);else if("getObject"==t.id)for(var n in $("#objName").html("["+t.data.properties.type.value+"]"+t.data.properties.name.value),$("#propertyList").empty(),t.data.properties)Object.prototype.hasOwnProperty.call(t.data.properties,n)&&"name"!=n&&"type"!=n&&$("#propertyList").append(propertyContent(t.data.id,n,t.data.properties[n]));else if("propChange"==t.id){if(console.log("propChange",t.id+"_"+t.data.id,t.data),$("body *").each(function(){$(this).trigger(t.id+"_"+t.data.id,t.data)}),"ledAlive_value"!=t.data.id){var a=new Date;$("#logList").append("<tr><td>"+a.getHours()+":"+a.getMinutes()+":"+a.getSeconds()+"</td><td>"+t.data.id+"</td><td>"+t.data.svalue+"</td></tr>"),tableRoll("logList",128)}}else"ping"==t.id||t.id})}function sendRequest(e,t,n=null){console.log(JSON.stringify({id:e,cmd:t,data:n})),wsocket.send(JSON.stringify({id:e,cmd:t,data:n}))}function propertyContent(e,t,n){var a,i=$("<TR>");switch(i.append($("<td>").html(t)),n.type){case 0:a=$("<input type='checkbox' />"),1==n.value&&a.attr("checked",!0);break;case 1:a=$("<input type='number' placeholder='"+n.svalue+"' />");break;case 2:a=$("<input type='number' value='"+n.value+"' />");break;case 3:a=$("<input type='text' value='"+n.value+"' />");break;case 4:a=$("<select/>"),$.each(n.options,function(e,t){jOption=$("<option></option>").val(e).html(t),e==n.value&&jOption.attr("selected",!0),a.append(jOption)})}i.append($("<TD>").append(a));var o=$("<TD style='position:relative; text-align:center;'>");return n.rw?o.append(" <span class='ui-icon ui-icon-edit ui-btn-icon-notext'></span>"):a.prop("disabled",!0),i.append(o),a.on("propChange_"+e+"_"+t,function(e,t){$(this).attr("placeholder")?$(this).attr("placeholder",t.svalue):void 0!==$(this).val&&$(this).val(t.svalue),void 0!==$(this).text&&$(this).text(t.svalue),"checkbox"==$(this).attr("type")&&(t.value?$(this).prop("checked",!0):$(this).prop("checked",!1))}),a.change(function(){var n;n="checkbox"==$(this).attr("type")?$(this).is(":checked")?"true":"false":$(this).val(),sendRequest("sp","setProperty",{objId:e,propId:t,value:n})}),i}function handleObjectList(e){$("#mainList").empty(),$.each(e,function(e,t){var n=$("<tr>");n.append($("<td>").html(t.type));var a=$("<td>").html(t.name);a.click(function(){sessionStorage.setItem("objectId",t.id),$.mobile.changePage("#objDetails")}),n.append(a);var i=$("<td style='position:relative; text-align:center;'>"),o=$("<span class='ui-icon ui-icon-alert ui-btn-icon-notext'></span>");"yes"!=t.fail&&o.hide(),o.on("propChange_"+t.id+"_fail",function(e,t){t.value?$(this).show():$(this).hide()});var s=$("<span class='ui-icon ui-icon-lock ui-btn-icon-notext'></span>");"yes"!=t.override&&s.hide(),s.on("propChange_"+t.id+"_override",function(e,t){t.value?$(this).show():$(this).hide()}),i.append(o),i.append(s),jValue=$("<td>").html(t.svalue),jValue.on("propChange_"+t.id+"_value",function(e,t){$(this).text(t.svalue)}),n.append(jValue),n.append(i),$("#mainList").append(n)})}function disconnected(){$("#connStatus").html("Disconnected"),$.mobile.changePage("#Disconnected"),clearTimeout(ping)}$(document).ready(function(){wsConnect()}),$(document).on("pagebeforeshow","#objDetails",function(e,t){sendRequest("getObject","getObject",{objId:sessionStorage.getItem("objectId")})}),$(document).on("pagecreate","#Disconnected",function(){$("#btnConnect").on("click",function(){$("#connStatus").html("Connecting"),wsConnect()})}),$("#uploadBtn").on("click",function(e){e.preventDefault();let t=$("#fileInput1")[0].files[0];t?$.ajax({url:"/api/update",type:"POST",data:t,processData:!1,contentType:"application/octet-stream",success:function(){alert("Upload OK, l'ESP32 si riavvia")},error:function(){alert("Errore upload")}}):alert("Seleziona un file .bin")}),$(document).on("submit","#uploadConfig",function(e){e.preventDefault();var t=$("#uploadConfigFile")[0].files[0];t?$.ajax({url:"/api/writeConf",type:"POST",data:t,processData:!1,contentType:"application/octet-stream",headers:{"X-Filename":t.name},success:function(e){alert("upload OK")},error:function(){alert("upload ERROR")}}):alert("Seleziona un file")})</script>
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Felicizia Dashboard</title>
+    <style>
+        :root {
+            --primary: #2196F3;
+            --bg: #f4f4f4;
+            --text: #333;
+            --white: #fff;
+        }
+        body { font-family: sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+        
+        /* Navigation */
+        nav { background: #333; position: fixed; top: 0; width: 100%; display: flex; z-index: 1000; }
+        nav a { flex: 1; color: white; text-align: center; padding: 14px; text-decoration: none; font-size: 14px; }
+        nav a.active { background: var(--primary); }
+
+        /* Pages */
+        .page { display: none; padding: 70px 15px 20px; }
+        .page.active { display: block; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #eee; cursor: pointer; }
+        tr:hover { background: #f9f9f9; }
+
+        /* Inputs & Buttons */
+        input[type="search"], input[type="text"], input[type="number"], select {
+            width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
+        }
+        button, .btn {
+            background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px;
+            text-decoration: none; display: block; text-align: center;
+        }
+        button:disabled { background: #ccc; }
+
+        /* Status Icons */
+        .icon { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin: 0 3px; }
+        .icon-fail { background: #ff5252; }
+        .icon-lock { background: #ffd740; }
+        
+        #connStatus { text-align: center; margin-top: 50px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<nav id="navbar">
+    <a href="#Main" class="active">Home</a>
+    <a href="#Log">Log</a>
+    <a href="#Fup">Setting</a>
+</nav>
+
+<!-- Page: Main -->
+<section id="Main" class="page active">
+    <input type="search" id="filterInput" placeholder="Cerca oggetti..." oninput="filterTable()">
+    <table id="mainTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Tipo</th>
+                <th onclick="sortTable(1)">Nome</th>
+                <th>Valore</th>
+                <th>Stato</th>
+            </tr>
+        </thead>
+        <tbody id="mainList"></tbody>
+    </table>
+</section>
+
+<!-- Page: Log -->
+<section id="Log" class="page">
+    <table>
+        <thead>
+            <tr><th>TS</th><th>Evento</th><th>Valore</th></tr>
+        </thead>
+        <tbody id="logList"></tbody>
+    </table>
+</section>
+
+<!-- Page: Setting -->
+<section id="Fup" class="page">
+    <h2>Manutenzione</h2>
+    <div style="margin-bottom: 20px;">
+        <label>Firmware Update (.bin)</label>
+        <input type="file" id="fwFile" accept=".bin">
+        <button onclick="uploadFile('/api/update', 'fwFile')">Upload Firmware</button>
+    </div>
+    <div style="margin-bottom: 20px;">
+        <label>Configurazione (.conf)</label>
+        <input type="file" id="confFile" accept=".conf">
+        <button onclick="uploadFile('/api/writeConf', 'confFile', true)">Carica Config</button>
+    </div>
+    <a href="/api/readConf" class="btn">Scarica Config</a>
+</section>
+
+<!-- Page: Details -->
+<section id="objDetails" class="page">
+    <button onclick="location.hash='#Main'" style="width: auto; margin-bottom: 10px;">&larr; Indietro</button>
+    <h2 id="objName" style="text-align:center;">Dettagli</h2>
+    <table><tbody id="propertyList"></tbody></table>
+</section>
+
+<!-- Page: Disconnected -->
+<section id="Disconnected" class="page">
+    <div id="connStatus">
+        <h3>Connessione persa</h3>
+        <button onclick="wsConnect()" style="width: auto;">Riconnetti</button>
+    </div>
+</section>
+
+<script>
+    let wsocket;
+    let pingInterval;
+
+    // --- Routing ---
+    function router() {
+        const hash = location.hash || '#Main';
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+        
+        const targetPage = document.querySelector(hash);
+        if (targetPage) targetPage.classList.add('active');
+        
+        const targetNav = document.querySelector(`nav a[href="${hash}"]`);
+        if (targetNav) targetNav.classList.add('active');
+
+        if (hash === '#objDetails') loadObjDetails();
+    }
+    window.addEventListener('hashchange', router);
+
+    // --- WebSocket ---
+    function wsConnect() {
+        wsocket = new WebSocket(`ws://${location.host}`, "ws");
+        
+        wsocket.onopen = () => {
+            location.hash = '#Main';
+            router();
+            pingInterval = setInterval(() => sendRequest("ping", "ping"), 5000);
+            sendRequest("getObjectList", "getObjectList");
+        };
+
+        wsocket.onclose = () => {
+            clearInterval(pingInterval);
+            location.hash = '#Disconnected';
+            router();
+        };
+
+        wsocket.onmessage = (event) => {
+            try {
+                const obj = JSON.parse(event.data);
+                handleMessage(obj);
+            } catch (e) { console.error("WS Parse Error", e); }
+        };
+    }
+
+    function sendRequest(id, cmd, data = null) {
+        if (wsocket && wsocket.readyState === WebSocket.OPEN) {
+            wsocket.send(JSON.stringify({id, cmd, data}));
+        }
+    }
+
+    function handleMessage(obj) {
+        switch(obj.id) {
+            case "getObjectList": renderMainList(obj.data); break;
+            case "getObject": renderProperties(obj.data); break;
+            case "propChange": handlePropChange(obj.data); break;
+        }
+    }
+
+    // --- Rendering ---
+    function renderMainList(data) {
+        const list = document.getElementById('mainList');
+        list.innerHTML = data.map(v => `
+            <tr onclick="viewDetails('${v.id}')">
+                <td>${v.type}</td>
+                <td><strong>${v.name}</strong></td>
+                <td id="val_${v.id}">${v.svalue}</td>
+                <td>
+                    <span id="fail_${v.id}" class="icon icon-fail ${v.fail==='yes'?'':'hidden'}"></span>
+                    <span id="lock_${v.id}" class="icon icon-lock ${v.override==='yes'?'':'hidden'}"></span>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function viewDetails(id) {
+        sessionStorage.setItem("objectId", id);
+        location.hash = '#objDetails';
+    }
+
+    function loadObjDetails() {
+        const id = sessionStorage.getItem("objectId");
+        sendRequest("getObject", "getObject", {objId: id});
+    }
+
+    function renderProperties(data) {
+        document.getElementById('objName').innerText = `[${data.properties.type.value}] ${data.properties.name.value}`;
+        const list = document.getElementById('propertyList');
+        list.innerHTML = '';
+
+        for (let prop in data.properties) {
+            if (prop === "name" || prop === "type") continue;
+            const p = data.properties[prop];
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${prop}</td><td id="ui_${data.id}_${prop}"></td>`;
+            list.appendChild(row);
+            
+            const container = document.getElementById(`ui_${data.id}_${prop}`);
+            renderInput(container, data.id, prop, p);
+        }
+    }
+
+    function renderInput(container, objId, propId, p) {
+        let el;
+        switch(p.type) {
+            case 0: // Bool
+                el = document.createElement('input');
+                el.type = 'checkbox';
+                el.checked = p.value;
+                break;
+            case 4: // Select
+                el = document.createElement('select');
+                for(let val in p.options) {
+                    const opt = new Option(p.options[val], val);
+                    if(val == p.value) opt.selected = true;
+                    el.add(opt);
+                }
+                break;
+            default: // Text/Number
+                el = document.createElement('input');
+                el.type = (p.type === 1 || p.type === 2) ? 'number' : 'text';
+                el.value = p.value;
+        }
+        
+        if (!p.rw) el.disabled = true;
+        
+        el.onchange = () => {
+            const val = el.type === 'checkbox' ? el.checked.toString() : el.value;
+            sendRequest("sp", "setProperty", {objId, propId, value: val});
+        };
+        
+        container.appendChild(el);
+    }
+
+    function handlePropChange(data) {
+        // Aggiorna tabella principale
+        const cell = document.getElementById(`val_${data.id}`);
+        if (cell) cell.innerText = data.svalue;
+
+        // Aggiorna icone stato
+        if (data.id.endsWith('_fail')) {
+            const id = data.id.replace('_fail', '');
+            const icon = document.getElementById(`fail_${id}`);
+            if (icon) icon.classList.toggle('hidden', !data.value);
+        }
+        if (data.id.endsWith('_override')) {
+            const id = data.id.replace('_override', '');
+            const icon = document.getElementById(`lock_${id}`);
+            if (icon) icon.classList.toggle('hidden', !data.value);
+        }
+
+        // Aggiungi al Log (escludendo ledAlive)
+        if (!data.id.includes('ledAlive')) {
+            const log = document.getElementById('logList');
+            const now = new Date().toLocaleTimeString();
+            const row = log.insertRow(0);
+            row.innerHTML = `<td>${now}</td><td>${data.id}</td><td>${data.svalue}</td>`;
+            if (log.rows.length > 128) log.deleteRow(128);
+        }
+    }
+
+    // --- Utilities ---
+    async function uploadFile(url, inputId, isConfig = false) {
+        const file = document.getElementById(inputId).files[0];
+        if (!file) return alert("Seleziona un file");
+
+        const headers = isConfig ? { "X-Filename": file.name } : {};
+        
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                body: file,
+                headers: headers
+            });
+            if (res.ok) alert("Upload completato con successo");
+            else alert("Errore durante l'upload");
+        } catch (e) {
+            alert("Errore di connessione");
+        }
+    }
+
+    function filterTable() {
+        const query = document.getElementById('filterInput').value.toLowerCase();
+        document.querySelectorAll('#mainList tr').forEach(tr => {
+            tr.style.display = tr.innerText.toLowerCase().includes(query) ? '' : 'none';
+        });
+    }
+
+    function sortTable(n) {
+        const table = document.getElementById("mainTable");
+        let rows = Array.from(table.rows).slice(1);
+        rows.sort((a, b) => a.cells[n].innerText.localeCompare(b.cells[n].innerText, undefined, {numeric: true}));
+        rows.forEach(row => table.tBodies[0].appendChild(row));
+    }
+
+    document.addEventListener('DOMContentLoaded', wsConnect);
+</script>
+</body>
+</html>
