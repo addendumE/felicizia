@@ -377,6 +377,7 @@ void DataManager::loop()
             temperaturaAriaOk.getValue() &&
             tensioneBatteriaOk.getValue() &&
             livIrrigazioneOk.getValue() &&
+            orarioOk.getValue() &&
             pompa_on(
                 (int)numeroIrrigazioni.getValue(),
                 (int)tempoIrrigazione.getValue()*60,

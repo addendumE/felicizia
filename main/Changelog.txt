@@ -5,3 +5,5 @@ VER_1_2
     - ts publish ogni 10 minuti invece che ogni min
 VER_1_3
     - sincronizzazione ntp al boot,timezione roma
+VER_1_4
+    - fix: cmdPompaIrrigazione non teneva conto di orarioOk
