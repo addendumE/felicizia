@@ -248,8 +248,11 @@
 
     function handlePropChange(data) {
         // Aggiorna tabella principale
-        const cell = document.getElementById(`val_${data.id}`);
-        if (cell) cell.innerText = data.svalue;
+        if (data.id.endsWith('_value') && !data.id.endsWith('_override_value')) {
+            const id = data.id.replace('_value', '');
+            const cell = document.getElementById(`val_${id}`);
+            if (cell) cell.innerText = data.svalue;
+        }
 
         // Aggiorna icone stato
         if (data.id.endsWith('_fail')) {
@@ -261,6 +264,19 @@
             const id = data.id.replace('_override', '');
             const icon = document.getElementById(`lock_${id}`);
             if (icon) icon.classList.toggle('hidden', !data.value);
+        }
+
+        // Aggiorna pagina dettagli (se aperta)
+        const detailContainer = document.getElementById(`ui_${data.id}`);
+        if (detailContainer) {
+            const inputEl = detailContainer.querySelector('input, select');
+            if (inputEl) {
+                if (inputEl.type === 'checkbox') {
+                    inputEl.checked = data.value;
+                } else {
+                    inputEl.value = data.value;
+                }
+            }
         }
 
         // Aggiungi al Log (escludendo ledAlive)

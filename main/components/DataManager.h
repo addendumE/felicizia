@@ -1,3 +1,4 @@
+#define LINUX_PLATFORM
 #include "Thread.h"
 #include "ObjManager.h"
 #include "Persistance.h"

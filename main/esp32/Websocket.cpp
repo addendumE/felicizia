@@ -93,31 +93,35 @@ bool Websocket::ws_enqueue_fragmented_text(const string &msg)
     bool first = true;
     while (offset < total_len) {
         size_t chunk_len = std::min((size_t)WS_CHUNK_SIZE, total_len - offset);
-        // alloca payload
-        uint8_t* payload = (uint8_t*)malloc(chunk_len);
-        if (!payload) {
-			ESP_LOGE(TAG,"mem allocation fail");
-            return false; // out of memory
-        }
-		//ESP_LOGI(TAG,"malloc tx payload %p",payload);
-        memcpy(payload, msg.data() + offset, chunk_len);
-        // crea frame
-        httpd_ws_frame_t frame = {};
-        frame.payload = payload;
-        frame.len = chunk_len;
-        // tipo frame
+
+        httpd_ws_type_t frame_type;
         if (first) {
-            frame.type = HTTPD_WS_TYPE_TEXT;
+            frame_type = HTTPD_WS_TYPE_TEXT;
             first = false;
         } else {
-            frame.type = HTTPD_WS_TYPE_CONTINUE;
+            frame_type = HTTPD_WS_TYPE_CONTINUE;
         }
 
-        // final flag
-        frame.final = (offset + chunk_len) >= total_len;
-        frame.fragmented = !frame.final;  // opzionale ma coerente
+        bool is_final = (offset + chunk_len) >= total_len;
+
 		for (auto c:clients)
 		{
+            // alloca payload
+            uint8_t* payload = (uint8_t*)malloc(chunk_len);
+            if (!payload) {
+                ESP_LOGE(TAG,"mem allocation fail");
+                return false; // out of memory
+            }
+            memcpy(payload, msg.data() + offset, chunk_len);
+            
+            // crea frame
+            httpd_ws_frame_t frame = {};
+            frame.payload = payload;
+            frame.len = chunk_len;
+            frame.type = frame_type;
+            frame.final = is_final;
+            frame.fragmented = !is_final;
+
 			auto *job = new ws_tx_job_t {
 				.httpd    = server,
 				.client_fd = c,
