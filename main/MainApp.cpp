@@ -12,9 +12,10 @@ static const char * TAG="APP";
 MainApp::MainApp():
 	reboot("reb", 1000),
 	nvs("APP",NVS_READWRITE),
-	objManager(new (ObjManager)),
+	objManager(new ObjManager()),
+	mqtt(new MqttClient()),
 	protocol(new MyProtocol(*objManager)),
-	persistance(new MyPersistence(*protocol,*objManager,nvs,ts)),
+	persistance(new MyPersistence(*protocol,*objManager,nvs,ts,mqtt)),
 	dataManager(new DataManager(*objManager,*persistance,hal))
 {
 }
@@ -45,15 +46,11 @@ void MainApp::start()
     });
 
 
-	//string ssid,pwd,mode,key;
-	//nvs.getString("ssid",ssid);
-	//nvs.getString("pwd",pwd);
-	//nvs.getString("pwd",key);
-
 	WifiManager::ssid = dataManager->getSSID();
 	WifiManager::pwd = dataManager->getPwd();
 	WifiManager::apHdr = "felicizia";
-
+	persistance->setUid(dataManager->getUid());
+	ESP_LOGI(TAG,"UID:%s",dataManager->getUid().c_str());
 
 	if (ssid.size())
 	{
@@ -66,8 +63,35 @@ void MainApp::start()
 	}
 	ESP_LOGI(TAG,"starting WEB server");
 	protocol->start(80);
+
 }
 
+void MainApp::startMqtt()
+{
+
+		mqtt->setOnMessageCallback([&](const std::string& topic, const std::string& payload)
+		{
+			ESP_LOGI(TAG,"mqtt msg %s %s",topic.c_str(),payload.c_str());
+		});
+	mqtt->setOnConnectCallback([&]()
+		{
+			ESP_LOGI(TAG,"mqtt connected");
+			mqtt->subscribe(dataManager->getMqttUri()+"/Downlink");
+			
+		});
+	mqtt->setOnDisconnectCallback([&]()
+		{
+			ESP_LOGI(TAG,"mqtt disconnected");
+		});
+		
+	ESP_LOGI(TAG,"Tentativo di connessione al broker MQTT: %s", dataManager->getMqttUri().c_str());
+	mqtt->start(dataManager->getMqttUri());
+	
+	// Forza l'uso di HiveMQ con WebSocket per bypassare l'NVS
+	// mqtt->start(dataManager->getMqttUri());
+	mqtt->start("ws://broker.hivemq.com:8000/mqtt");
+
+}
 
 void MainApp::onMode(WifiManager::Mode mode)
 {
@@ -82,6 +106,7 @@ void MainApp::onMode(WifiManager::Mode mode)
 		setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
 		tzset();
 #endif
+		startMqtt();
 	}
 	if (mode == WifiManager::WIFI_CLI_FAIL)
 	{

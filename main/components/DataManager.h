@@ -39,6 +39,8 @@ public:
     string getSSID();
     string getPwd();
     string getKey();
+    string getMqttUri();
+    string getUid();
     using ButtonCallBack = std::function<void(void)>;
     void onBootButton(ButtonCallBack cb) {
         bootButtonCallBack = cb;

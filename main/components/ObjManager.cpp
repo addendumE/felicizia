@@ -35,7 +35,7 @@ void ObjManager::getConf(string &s)
 			}
 		}
 	}
-	char *txt = cJSON_Print(jOut);
+	char *txt = cJSON_PrintUnformatted(jOut);
 	s=string(txt);
 	free(txt);
 	cJSON_Delete(jOut);

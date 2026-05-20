@@ -8,7 +8,7 @@ class Protocol:public Websocket {
 public:
 	Protocol(ObjManager &);
 	virtual ~Protocol();
-	void propChangeNotification(string objId,Types::PropertyId);
+	void propChangeNotification(string objId,Types::PropertyId, std::string &msg);
 private:
 	enum handleResult
 	{

@@ -60,7 +60,9 @@ namespace Types
 		PROP_TS_KEY,
 		PROP_SW_VERSION,
 		PROP_FILTER,
-		PROP_FEEDBACK
+		PROP_FEEDBACK,
+		PROP_MQTT_URI,
+		PROP_UID
 	};
 
 	struct PropertyEntry {

@@ -35,7 +35,9 @@ const PropertyEntry propertyEntries[] = {
 	{PROP_TS_KEY, "ts_key"},
 	{PROP_SW_VERSION, "sw_version"},
 	{PROP_FILTER, "filter"},
-	{PROP_FEEDBACK, "feedback"}
+	{PROP_FEEDBACK, "feedback"},
+	{PROP_MQTT_URI, "mqtt_uri"},
+	{PROP_UID, "uid"}
 };
 const int propertyEntriesCount = sizeof(propertyEntries) / sizeof(PropertyEntry);
 

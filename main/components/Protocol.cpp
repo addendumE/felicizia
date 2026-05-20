@@ -21,7 +21,7 @@ Protocol::~Protocol() {
 }
 
 
-void Protocol::propChangeNotification(const string objId,Types::PropertyId id)
+void Protocol::propChangeNotification(const string objId,Types::PropertyId id, string &msg)
 {
 	cJSON *jResp = cJSON_CreateObject();
 	cJSON * jProp = om.getPropertyJSONvalue(objId,id);
@@ -32,7 +32,8 @@ void Protocol::propChangeNotification(const string objId,Types::PropertyId id)
 		cJSON_AddStringToObject(jProp, "id", sid.c_str());
 		cJSON_AddItemToObject(jResp, "data", jProp);
 		cJSON_AddStringToObject(jResp, "id", "propChange");
-		char *txt = cJSON_Print(jResp);
+		char *txt = cJSON_PrintUnformatted(jResp);
+		msg = txt;
 		Websocket::send(txt);
 		//ESP_LOGI(TAG,"propChangeNotification %s",txt);
 
@@ -127,7 +128,7 @@ void Protocol::onMessage(const string &msg)
 			break;
 	}
 	cJSON_Delete(jReq);
-	char *txt = cJSON_Print(jResp);
+	char *txt = cJSON_PrintUnformatted(jResp);
 	Websocket::send(txt);
 	//ESP_LOGI(TAG,"RESPONSE: %s",txt);
 	free(txt);

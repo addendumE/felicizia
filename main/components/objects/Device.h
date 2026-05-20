@@ -7,4 +7,6 @@ public:
 	virtual ~Device();
 	void setFreeHeap(float);
 private:
+	void getUid();
+	std::string uid;
 };

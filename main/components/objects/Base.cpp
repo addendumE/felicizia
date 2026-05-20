@@ -233,7 +233,7 @@ cJSON * Base::getPropertyJson(PropertyId pId)
 string Base::serialize()
 {
 	cJSON * jOut = get();
-	char *txt = cJSON_Print(jOut);
+	char *txt = cJSON_PrintUnformatted(jOut);
 	string res;
 	res = txt;
 	free(txt);

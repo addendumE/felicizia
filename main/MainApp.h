@@ -13,17 +13,26 @@
 #include "Device.h"
 #include "DigitalOutput.h"
 #include "UsRange.h"
+#include "MqttClient.h"
+
 class MyPersistence: public Persistance {
 public:
-	MyPersistence(Protocol &prot, ObjManager &om, Nvs &nvs, ThingSpeak &ts):
+	MyPersistence(Protocol &prot, ObjManager &om, Nvs &nvs, ThingSpeak &ts, MqttClient *mqtt):
 		protocol(prot),
 		om(om),
 		nvs(nvs),
-		ts(ts){};
+		ts(ts),
+		mqtt(mqtt){};
 	virtual ~MyPersistence(){};
+	void setUid(std::string _uid)
+	{
+		pubtopic = _uid+"/Uplink";
+	}
 	void changeNotify(string objId, PropertyId p)
 	{
-		protocol.propChangeNotification(objId,p);
+		string msg;
+		protocol.propChangeNotification(objId,p,msg);
+		if (mqtt) mqtt->publish(pubtopic,msg);
 		//om.propChangeNotification(objId,p);
 	}
 	bool loadFloat(string id, PropertyId p, float &value)
@@ -90,6 +99,8 @@ private:
 	ObjManager &om;
 	Nvs &nvs;
 	ThingSpeak &ts;
+	MqttClient *mqtt;
+	std::string pubtopic;
 };
 
 
@@ -124,9 +135,13 @@ private:
 	Nvs nvs;
 	ThingSpeak ts;
 	ObjManager *objManager;
+	MqttClient *mqtt;
 	MyProtocol *protocol;
 	MyPersistence *persistance;
-	DataManager *dataManager;
+	
 	Hal hal;
+	DataManager *dataManager;
 	void onMode(WifiManager::Mode mode);
+	void startMqtt();
+
 };

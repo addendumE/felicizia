@@ -147,6 +147,16 @@ string DataManager::getKey()
 return device.getPropertyValueString(PROP_TS_KEY);
 }
 
+string DataManager::getMqttUri()
+{
+return device.getPropertyValueString(PROP_MQTT_URI);
+}
+
+string DataManager::getUid()
+{
+return device.getPropertyValueString(PROP_UID);
+}
+
 bool DataManager::adcRead(ads111x_mux_t mux, float &res)
 {
     bool ret = false;
