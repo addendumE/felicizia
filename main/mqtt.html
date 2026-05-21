@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Felicizia Dashboard MQTT</title>
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #2196F3;
+            --bg: #f4f4f4;
+            --text: #333;
+            --white: #fff;
+        }
+
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        nav {
+            background: #333;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            display: flex;
+            z-index: 1000;
+        }
+
+        nav a {
+            flex: 1;
+            color: white;
+            text-align: center;
+            padding: 14px;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        nav a.active {
+            background: var(--primary);
+        }
+
+        .page {
+            display: none;
+            padding: 70px 15px 20px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #eee;
+            cursor: pointer;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        input[type="search"],
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button,
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        button:disabled {
+            background: #ccc;
+        }
+
+        .icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 3px;
+        }
+
+        .icon-fail {
+            background: #ff5252;
+        }
+
+        .icon-lock {
+            background: #ffd740;
+        }
+
+        #connStatus {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .status {
+            padding: 10px;
+            background: #fff;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+    </style>
+</head>
+
+<body>
+
+<nav id="navbar">
+    <a href="#Main" class="active">Home</a>
+    <a href="#Log">Log</a>
+    <a href="#Settings">MQTT</a>
+</nav>
+
+<!-- MAIN -->
+<section id="Main" class="page active">
+
+    <input
+        type="search"
+        id="filterInput"
+        placeholder="Cerca oggetti..."
+        oninput="filterTable()"
+    >
+
+    <table id="mainTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Tipo</th>
+                <th onclick="sortTable(1)">Nome</th>
+                <th>Valore</th>
+                <th>Stato</th>
+            </tr>
+        </thead>
+
+        <tbody id="mainList"></tbody>
+    </table>
+
+</section>
+
+<!-- LOG -->
+<section id="Log" class="page">
+
+    <table>
+        <thead>
+            <tr>
+                <th>TS</th>
+                <th>Evento</th>
+                <th>Valore</th>
+            </tr>
+        </thead>
+
+        <tbody id="logList"></tbody>
+    </table>
+
+</section>
+
+<!-- SETTINGS -->
+<section id="Settings" class="page">
+
+    <h2>Configurazione MQTT</h2>
+
+    <div class="status">
+        <div>
+            <strong>Stato:</strong>
+            <span id="mqttState">Disconnesso</span>
+        </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+        <label>MQTT Host</label>
+
+        <input
+            type="text"
+            id="mqttHost"
+            placeholder="ws://broker:9001"
+        >
+    </div>
+
+    <div style="margin-bottom:20px;">
+        <label>Master Topic</label>
+
+        <input
+            type="text"
+            id="mqttTopic"
+            placeholder="felicizia"
+        >
+    </div>
+
+    <button onclick="applyMqttConfig()">
+        Salva e Connetti
+    </button>
+
+</section>
+
+<!-- DETAILS -->
+<section id="objDetails" class="page">
+
+    <button
+        onclick="location.hash='#Main'"
+        style="width:auto;margin-bottom:10px;"
+    >
+        &larr; Indietro
+    </button>
+
+    <h2 id="objName" style="text-align:center;">
+        Dettagli
+    </h2>
+
+    <table>
+        <tbody id="propertyList"></tbody>
+    </table>
+
+</section>
+
+<!-- DISCONNECTED -->
+<section id="Disconnected" class="page">
+
+    <div id="connStatus">
+
+        <h3>Connessione MQTT persa</h3>
+
+        <button
+            onclick="mqttConnect()"
+            style="width:auto;"
+        >
+            Riconnetti
+        </button>
+
+    </div>
+
+</section>
+
+<script>
+
+    let mqttClient;
+    let pingInterval;
+
+    // =========================
+    // CONFIG
+    // =========================
+
+    const mqttConfig = {
+
+        host:
+            localStorage.getItem("mqtt_host")
+            || "ws://localhost:9001",
+
+        masterTopic:
+            localStorage.getItem("mqtt_master_topic")
+            || "felicizia"
+    };
+
+    function saveMqttConfig() {
+
+        localStorage.setItem(
+            "mqtt_host",
+            mqttConfig.host
+        );
+
+        localStorage.setItem(
+            "mqtt_master_topic",
+            mqttConfig.masterTopic
+        );
+    }
+
+    function getDownlinkTopic() {
+
+        return `${mqttConfig.masterTopic}/Downlink`;
+    }
+
+    function getUplinkTopic() {
+
+        return `${mqttConfig.masterTopic}/Uplink`;
+    }
+
+    // =========================
+    // ROUTER
+    // =========================
+
+    function router() {
+
+        const hash = location.hash || '#Main';
+
+        document
+            .querySelectorAll('.page')
+            .forEach(p => p.classList.remove('active'));
+
+        document
+            .querySelectorAll('nav a')
+            .forEach(a => a.classList.remove('active'));
+
+        const targetPage =
+            document.querySelector(hash);
+
+        if (targetPage)
+            targetPage.classList.add('active');
+
+        const targetNav =
+            document.querySelector(
+                `nav a[href="${hash}"]`
+            );
+
+        if (targetNav)
+            targetNav.classList.add('active');
+
+        if (hash === '#objDetails')
+            loadObjDetails();
+    }
+
+    window.addEventListener('hashchange', router);
+
+    // =========================
+    // MQTT
+    // =========================
+
+    function mqttConnect() {
+
+        updateMqttState("Connessione...");
+
+        if (mqttClient) {
+
+            try {
+                mqttClient.end(true);
+            } catch(e) {}
+        }
+
+        mqttClient = mqtt.connect(
+            mqttConfig.host,
+            {
+                //reconnectPeriod: 3000,
+                connectTimeout: 5000,
+                clientId:
+                    'dashboard_' +
+                    Math.random()
+                        .toString(16)
+                        .substring(2, 10)
+            }
+        );
+
+        mqttClient.on('connect', () => {
+
+            console.log("MQTT Connected");
+
+            updateMqttState("Connesso");
+
+            mqttClient.subscribe(
+                getUplinkTopic(),
+                (err) => {
+
+                    if (err) {
+
+                        console.error(err);
+
+                        updateMqttState(
+                            "Errore subscribe"
+                        );
+
+                        return;
+                    }
+
+                    location.hash = '#Main';
+
+                    router();
+
+                    pingInterval = setInterval(() => {
+
+                        sendRequest(
+                            "ping",
+                            "ping"
+                        );
+
+                    }, 5000);
+
+                    sendRequest(
+                        "getObjectList",
+                        "getObjectList"
+                    );
+                }
+            );
+        });
+
+        mqttClient.on('message',
+            (topic, message) => {
+
+            if (topic !== getUplinkTopic())
+                return;
+
+            try {
+
+                const obj =
+                    JSON.parse(message.toString());
+
+                handleMessage(obj);
+
+            } catch (e) {
+
+                console.error(
+                    "MQTT Parse Error",
+                    e
+                );
+            }
+        });
+
+        mqttClient.on('close', () => {
+
+            console.log("MQTT Closed");
+
+            clearInterval(pingInterval);
+
+            updateMqttState("Disconnesso");
+
+            location.hash = '#Disconnected';
+
+            router();
+        });
+
+        mqttClient.on('error', (err) => {
+
+            console.error(err);
+
+            updateMqttState("Errore");
+        });
+    }
+
+    function sendRequest(
+        id,
+        cmd,
+        data = null
+    ) {
+
+        if (
+            !mqttClient ||
+            !mqttClient.connected
+        ) {
+            return;
+        }
+
+        const payload = {
+
+            id,
+            cmd,
+            data
+        };
+
+        mqttClient.publish(
+            getDownlinkTopic(),
+            JSON.stringify(payload)
+        );
+    }
+
+    function updateMqttState(text) {
+
+        document.getElementById(
+            'mqttState'
+        ).innerText = text;
+    }
+
+    function applyMqttConfig() {
+
+        mqttConfig.host =
+            document
+                .getElementById('mqttHost')
+                .value
+                .trim();
+
+        mqttConfig.masterTopic =
+            document
+                .getElementById('mqttTopic')
+                .value
+                .trim();
+
+        saveMqttConfig();
+        alert("Configurazione salvata");
+        mqttConnect();
+    }
+
+    // =========================
+    // MESSAGE HANDLER
+    // =========================
+
+    function handleMessage(obj) {
+
+        switch(obj.id) {
+
+            case "getObjectList":
+
+                renderMainList(obj.data);
+
+                break;
+
+            case "getObject":
+
+                renderProperties(obj.data);
+
+                break;
+
+            case "propChange":
+
+                handlePropChange(obj.data);
+
+                break;
+        }
+    }
+
+    // =========================
+    // MAIN LIST
+    // =========================
+
+    function renderMainList(data) {
+
+        const list =
+            document.getElementById('mainList');
+
+        list.innerHTML = data.map(v => `
+
+            <tr onclick="viewDetails('${v.id}')">
+
+                <td>${v.type}</td>
+
+                <td>
+                    <strong>${v.name}</strong>
+                </td>
+
+                <td id="val_${v.id}">
+                    ${v.svalue}
+                </td>
+
+                <td>
+
+                    <span
+                        id="fail_${v.id}"
+                        class="icon icon-fail ${v.fail==='yes'?'':'hidden'}">
+                    </span>
+
+                    <span
+                        id="lock_${v.id}"
+                        class="icon icon-lock ${v.override==='yes'?'':'hidden'}">
+                    </span>
+
+                </td>
+
+            </tr>
+
+        `).join('');
+    }
+
+    function viewDetails(id) {
+
+        sessionStorage.setItem(
+            "objectId",
+            id
+        );
+
+        location.hash = '#objDetails';
+    }
+
+    // =========================
+    // DETAILS
+    // =========================
+
+    function loadObjDetails() {
+
+        const id =
+            sessionStorage.getItem("objectId");
+
+        sendRequest(
+            "getObject",
+            "getObject",
+            {
+                objId: id
+            }
+        );
+    }
+
+    function renderProperties(data) {
+
+        document.getElementById(
+            'objName'
+        ).innerText =
+            `[${data.properties.type.value}] ${data.properties.name.value}`;
+
+        const list =
+            document.getElementById(
+                'propertyList'
+            );
+
+        list.innerHTML = '';
+
+        for (let prop in data.properties) {
+
+            if (
+                prop === "name" ||
+                prop === "type"
+            ) continue;
+
+            const p =
+                data.properties[prop];
+
+            const row =
+                document.createElement('tr');
+
+            row.innerHTML =
+                `<td>${prop}</td>
+                 <td id="ui_${data.id}_${prop}"></td>`;
+
+            list.appendChild(row);
+
+            const container =
+                document.getElementById(
+                    `ui_${data.id}_${prop}`
+                );
+
+            renderInput(
+                container,
+                data.id,
+                prop,
+                p
+            );
+        }
+    }
+
+    function renderInput(
+        container,
+        objId,
+        propId,
+        p
+    ) {
+
+        let el;
+
+        switch(p.type) {
+
+            case 0:
+
+                el =
+                    document.createElement('input');
+
+                el.type = 'checkbox';
+
+                el.checked = p.value;
+
+                break;
+
+            case 4:
+
+                el =
+                    document.createElement('select');
+
+                for(let val in p.options) {
+
+                    const opt =
+                        new Option(
+                            p.options[val],
+                            val
+                        );
+
+                    if(val == p.value)
+                        opt.selected = true;
+
+                    el.add(opt);
+                }
+
+                break;
+
+            default:
+
+                el =
+                    document.createElement('input');
+
+                el.type =
+                    (p.type === 1 ||
+                     p.type === 2)
+                        ? 'number'
+                        : 'text';
+
+                el.value = p.value;
+        }
+
+        if (!p.rw)
+            el.disabled = true;
+
+        el.onchange = () => {
+
+            const val =
+                el.type === 'checkbox'
+                    ? el.checked.toString()
+                    : el.value;
+
+            sendRequest(
+                "sp",
+                "setProperty",
+                {
+                    objId,
+                    propId,
+                    value: val
+                }
+            );
+        };
+
+        container.appendChild(el);
+    }
+
+    // =========================
+    // PROP CHANGE
+    // =========================
+
+    function handlePropChange(data) {
+
+        if (
+            data.id.endsWith('_value') &&
+            !data.id.endsWith('_override_value')
+        ) {
+
+            const id =
+                data.id.replace('_value', '');
+
+            const cell =
+                document.getElementById(
+                    `val_${id}`
+                );
+
+            if (cell)
+                cell.innerText = data.svalue;
+        }
+
+        if (data.id.endsWith('_fail')) {
+
+            const id =
+                data.id.replace('_fail', '');
+
+            const icon =
+                document.getElementById(
+                    `fail_${id}`
+                );
+
+            if (icon)
+                icon.classList.toggle(
+                    'hidden',
+                    !data.value
+                );
+        }
+
+        if (data.id.endsWith('_override')) {
+
+            const id =
+                data.id.replace('_override', '');
+
+            const icon =
+                document.getElementById(
+                    `lock_${id}`
+                );
+
+            if (icon)
+                icon.classList.toggle(
+                    'hidden',
+                    !data.value
+                );
+        }
+
+        if (!data.id.includes('ledAlive')) {
+
+            const log =
+                document.getElementById(
+                    'logList'
+                );
+
+            const now =
+                new Date()
+                    .toLocaleTimeString();
+
+            const row =
+                log.insertRow(0);
+
+            row.innerHTML =
+                `<td>${now}</td>
+                 <td>${data.id}</td>
+                 <td>${data.svalue}</td>`;
+
+            if (log.rows.length > 128)
+                log.deleteRow(128);
+        }
+    }
+
+    // =========================
+    // UTILITIES
+    // =========================
+
+    function filterTable() {
+
+        const query =
+            document
+                .getElementById(
+                    'filterInput'
+                )
+                .value
+                .toLowerCase();
+
+        document
+            .querySelectorAll('#mainList tr')
+            .forEach(tr => {
+
+            tr.style.display =
+                tr.innerText
+                    .toLowerCase()
+                    .includes(query)
+                        ? ''
+                        : 'none';
+        });
+    }
+
+    function sortTable(n) {
+
+        const table =
+            document.getElementById(
+                "mainTable"
+            );
+
+        let rows =
+            Array.from(table.rows)
+                .slice(1);
+
+        rows.sort((a, b) =>
+
+            a.cells[n].innerText.localeCompare(
+                b.cells[n].innerText,
+                undefined,
+                {numeric: true}
+            )
+        );
+
+        rows.forEach(row =>
+
+            table.tBodies[0]
+                .appendChild(row)
+        );
+    }
+
+    // =========================
+    // STARTUP
+    // =========================
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        () => {
+
+        document.getElementById(
+            'mqttHost'
+        ).value = mqttConfig.host;
+
+        document.getElementById(
+            'mqttTopic'
+        ).value = mqttConfig.masterTopic;
+
+        mqttConnect();
+    });
+
+</script>
+
+</body>
+</html>

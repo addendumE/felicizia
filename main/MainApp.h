@@ -17,12 +17,16 @@
 
 class MyPersistence: public Persistance {
 public:
-	MyPersistence(Protocol &prot, ObjManager &om, Nvs &nvs, ThingSpeak &ts, MqttClient *mqtt):
-		protocol(prot),
+	MyPersistence(Protocol &protocol, ObjManager &om, Nvs &nvs, ThingSpeak &ts, MqttClient &mqtt, Websocket &websocket):
+		protocol(protocol),
 		om(om),
 		nvs(nvs),
 		ts(ts),
-		mqtt(mqtt){};
+		mqtt(mqtt),
+		websocket(websocket)
+	{
+
+	};
 	virtual ~MyPersistence(){};
 	void setUid(std::string _uid)
 	{
@@ -30,9 +34,9 @@ public:
 	}
 	void changeNotify(string objId, PropertyId p)
 	{
-		string msg;
-		protocol.propChangeNotification(objId,p,msg);
-		if (mqtt) mqtt->publish(pubtopic,msg);
+		string msg =protocol.propChangeNotification(objId,p);
+		mqtt.publish(pubtopic,msg);
+		websocket.send(msg);
 		//om.propChangeNotification(objId,p);
 	}
 	bool loadFloat(string id, PropertyId p, float &value)
@@ -99,7 +103,8 @@ private:
 	ObjManager &om;
 	Nvs &nvs;
 	ThingSpeak &ts;
-	MqttClient *mqtt;
+	MqttClient &mqtt;
+	Websocket &websocket;
 	std::string pubtopic;
 };
 
@@ -110,21 +115,10 @@ public:
 	virtual ~MyProtocol(){};
 private:
 	ObjManager &om;
-	void onOTAenter(){};
-	void onOTAexit(){
-		vTaskDelay(pdMS_TO_TICKS(1000));
-		esp_restart();
-	};
-	void onConfigRead(string &s)
-	{
-		om.getConf(s);
-	}
-	bool onConfigWrite(string &s) {
-		return om.setConf(s);
-	}
+	
 };
 
-class MainApp: public WifiManager {
+class MainApp: public WifiManager, public Websocket {
 public:
 	MainApp();
 	virtual ~MainApp();
@@ -143,5 +137,18 @@ private:
 	DataManager *dataManager;
 	void onMode(WifiManager::Mode mode);
 	void startMqtt();
+	void onMessage(const string&);
+	void onOTAenter(){};
+	void onOTAexit(){
+		vTaskDelay(pdMS_TO_TICKS(1000));
+		esp_restart();
+	};
+	void onConfigRead(string &s)
+	{
+		objManager->getConf(s);
+	}
+	bool onConfigWrite(string &s) {
+		return objManager->setConf(s);
+	}
 
 };

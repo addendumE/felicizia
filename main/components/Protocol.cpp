@@ -12,17 +12,16 @@ static const char *TAG="PROTOCOL";
 Protocol::Protocol(ObjManager &om):
 om(om)
 {
-	// TODO Auto-generated constructor stub
-
 }
 
 Protocol::~Protocol() {
-	// TODO Auto-generated destructor stub
+
 }
 
 
-void Protocol::propChangeNotification(const string objId,Types::PropertyId id, string &msg)
+string Protocol::propChangeNotification(const string objId,Types::PropertyId id)
 {
+	string msg;
 	cJSON *jResp = cJSON_CreateObject();
 	cJSON * jProp = om.getPropertyJSONvalue(objId,id);
 
@@ -34,19 +33,11 @@ void Protocol::propChangeNotification(const string objId,Types::PropertyId id, s
 		cJSON_AddStringToObject(jResp, "id", "propChange");
 		char *txt = cJSON_PrintUnformatted(jResp);
 		msg = txt;
-		Websocket::send(txt);
-		//ESP_LOGI(TAG,"propChangeNotification %s",txt);
-
-		free(txt);
 		cJSON_Delete(jResp);
 	}
-	else
-	{
-		//ESP_LOGE(TAG,"propChangeNotification json error");
-	}
-
+	return msg;
 }
-void Protocol::onMessage(const string &msg)
+string Protocol::onMessage(const string &msg)
 {
 	cJSON *jReq = cJSON_Parse(msg.c_str());
 	cJSON *jResp = cJSON_CreateObject();
@@ -57,7 +48,7 @@ void Protocol::onMessage(const string &msg)
 		{
 			ESP_LOGE(TAG,"onMessage parsing error: %s\n",pEerr);
 		}
-		return;
+		return "";
 	}
 
 	string id;
@@ -129,11 +120,9 @@ void Protocol::onMessage(const string &msg)
 	}
 	cJSON_Delete(jReq);
 	char *txt = cJSON_PrintUnformatted(jResp);
-	Websocket::send(txt);
-	//ESP_LOGI(TAG,"RESPONSE: %s",txt);
+	string result = txt;
 	free(txt);
-	cJSON_Delete(jResp);
-
+	return result;
 }
 
 Protocol::handleResult Protocol::handleObjList(cJSON *jReq,cJSON **jResp)

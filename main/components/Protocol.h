@@ -1,14 +1,13 @@
 #pragma once
 
 #include "ObjManager.h"
-#include "Websocket.h"
 #include "Types.h"
-#include "iostream"
-class Protocol:public Websocket {
+class Protocol {
 public:
 	Protocol(ObjManager &);
 	virtual ~Protocol();
-	void propChangeNotification(string objId,Types::PropertyId, std::string &msg);
+	string propChangeNotification(string objId,Types::PropertyId);
+	string onMessage(const string&);
 private:
 	enum handleResult
 	{
@@ -19,10 +18,8 @@ private:
 		RES_ERR_INTERNAL
 	};
 	ObjManager &om;
-	void onMessage(const string&);
 	handleResult handleObjList(cJSON *jReq,cJSON **jResp);
 	handleResult handleObjTypes(cJSON *jReq,cJSON **jResp);
 	handleResult handleObj(cJSON *jReq,cJSON **jResp);
 	handleResult handleProperySet(cJSON *jReq,cJSON **jResp);
-
 };

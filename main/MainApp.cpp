@@ -15,7 +15,7 @@ MainApp::MainApp():
 	objManager(new ObjManager()),
 	mqtt(new MqttClient()),
 	protocol(new MyProtocol(*objManager)),
-	persistance(new MyPersistence(*protocol,*objManager,nvs,ts,mqtt)),
+	persistance(new MyPersistence(*protocol,*objManager,nvs,ts,*mqtt,*this)),
 	dataManager(new DataManager(*objManager,*persistance,hal))
 {
 }
@@ -62,8 +62,14 @@ void MainApp::start()
 		ap();
 	}
 	ESP_LOGI(TAG,"starting WEB server");
-	protocol->start(80);
+	Websocket::start(80);
 
+}
+
+void MainApp::onMessage(const string& msg)
+{
+	string resp = protocol->onMessage(msg);
+	Websocket::send(resp);
 }
 
 void MainApp::startMqtt()
@@ -86,11 +92,6 @@ void MainApp::startMqtt()
 		
 	ESP_LOGI(TAG,"Tentativo di connessione al broker MQTT: %s", dataManager->getMqttUri().c_str());
 	mqtt->start(dataManager->getMqttUri());
-	
-	// Forza l'uso di HiveMQ con WebSocket per bypassare l'NVS
-	// mqtt->start(dataManager->getMqttUri());
-	mqtt->start("ws://broker.hivemq.com:8000/mqtt");
-
 }
 
 void MainApp::onMode(WifiManager::Mode mode)
