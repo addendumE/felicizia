@@ -3,10 +3,8 @@
 #include "esp_log.h"
 static const char * TAG="APP";
 
-#ifndef LINUX_PLATFORM
 #include "esp_system.h"
 #include "esp_sntp.h"
-#endif
 
 
 MainApp::MainApp():
@@ -78,11 +76,13 @@ void MainApp::startMqtt()
 		mqtt->setOnMessageCallback([&](const std::string& topic, const std::string& payload)
 		{
 			ESP_LOGI(TAG,"mqtt msg %s %s",topic.c_str(),payload.c_str());
+			string resp = protocol->onMessage(payload);
+			mqtt->publish(dataManager->getUid()+"/Uplink",resp);
 		});
 	mqtt->setOnConnectCallback([&]()
 		{
 			ESP_LOGI(TAG,"mqtt connected");
-			mqtt->subscribe(dataManager->getMqttUri()+"/Downlink");
+			mqtt->subscribe(dataManager->getUid()+"/Downlink");
 			
 		});
 	mqtt->setOnDisconnectCallback([&]()
@@ -99,14 +99,12 @@ void MainApp::onMode(WifiManager::Mode mode)
 	ESP_LOGI(TAG,"wifi mode now is: %d",mode);
 	if (mode == WifiManager::WIFI_CLI_OK)
 	{
-#ifndef LINUX_PLATFORM
 		ESP_LOGI(TAG, "Initializing SNTP");
-		sntp_setoperatingmode(SNTP_OPMODE_POLL);
-		sntp_setservername(0, "pool.ntp.org");
-		sntp_init();
+		esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
+		esp_sntp_setservername(0, "pool.ntp.org");
+		esp_sntp_init();
 		setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
 		tzset();
-#endif
 		startMqtt();
 	}
 	if (mode == WifiManager::WIFI_CLI_FAIL)

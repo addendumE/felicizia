@@ -22,17 +22,18 @@ Protocol::~Protocol() {
 string Protocol::propChangeNotification(const string objId,Types::PropertyId id)
 {
 	string msg;
-	cJSON *jResp = cJSON_CreateObject();
 	cJSON * jProp = om.getPropertyJSONvalue(objId,id);
 
 	if (jProp)
 	{
+		cJSON *jResp = cJSON_CreateObject();
 		string sid = objId+"_"+getPropertyName(id);
 		cJSON_AddStringToObject(jProp, "id", sid.c_str());
 		cJSON_AddItemToObject(jResp, "data", jProp);
 		cJSON_AddStringToObject(jResp, "id", "propChange");
 		char *txt = cJSON_PrintUnformatted(jResp);
 		msg = txt;
+		free(txt);
 		cJSON_Delete(jResp);
 	}
 	return msg;
@@ -48,6 +49,7 @@ string Protocol::onMessage(const string &msg)
 		{
 			ESP_LOGE(TAG,"onMessage parsing error: %s\n",pEerr);
 		}
+		cJSON_Delete(jResp);
 		return "";
 	}
 
@@ -120,6 +122,7 @@ string Protocol::onMessage(const string &msg)
 	}
 	cJSON_Delete(jReq);
 	char *txt = cJSON_PrintUnformatted(jResp);
+	cJSON_Delete(jResp);
 	string result = txt;
 	free(txt);
 	return result;

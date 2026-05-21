@@ -55,6 +55,7 @@ bool MqttClient::publish(const std::string& topic, const std::string& payload, i
 
 bool MqttClient::subscribe(const std::string& topic, int qos) {
     if (!client) return false;
+    ESP_LOGI(TAG,"subscribe %s",topic.c_str());
     int msg_id = esp_mqtt_client_subscribe(client, topic.c_str(), qos);
     return msg_id != -1;
 }
@@ -104,6 +105,7 @@ void MqttClient::handleEvent(esp_mqtt_event_handle_t event) {
             // I parametri topic e data all'interno dell'evento non sono 'null-terminated' (terminati con '\0')
             std::string topic(event->topic, event->topic_len);
             std::string payload(event->data, event->data_len);
+            ESP_LOGI(TAG, "MQTT_EVENT_DATA %s",payload.c_str());
             if (onMessageCb) onMessageCb(topic, payload);
             break;
         }

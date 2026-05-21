@@ -372,7 +372,7 @@
         mqttClient = mqtt.connect(
             mqttConfig.host,
             {
-                //reconnectPeriod: 3000,
+                reconnectPeriod: 0,
                 connectTimeout: 5000,
                 clientId:
                     'dashboard_' +
@@ -426,6 +426,7 @@
 
         mqttClient.on('message',
             (topic, message) => {
+            message = new TextDecoder().decode(message);
 
             if (topic !== getUplinkTopic())
                 return;
@@ -486,7 +487,6 @@
             cmd,
             data
         };
-
         mqttClient.publish(
             getDownlinkTopic(),
             JSON.stringify(payload)
@@ -766,6 +766,20 @@
 
             if (cell)
                 cell.innerText = data.svalue;
+        }
+
+        // Aggiorna il campo nell'interfaccia di dettaglio se l'elemento esiste
+        const detailUi = document.getElementById(`ui_${data.id}`);
+        if (detailUi && detailUi.firstChild) {
+            const el = detailUi.firstChild;
+            if (el.type === 'checkbox') {
+                el.checked = (data.value === true || 
+                             data.value === "true" || 
+                             data.value === 1 || 
+                             data.value === "1");
+            } else {
+                el.value = data.value;
+            }
         }
 
         if (data.id.endsWith('_fail')) {
