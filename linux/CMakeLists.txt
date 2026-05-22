@@ -25,7 +25,7 @@ add_executable(example ${sources})
 
 # just for example add some compiler flags
 target_compile_options(example PUBLIC -std=c++1y -Wall -Wfloat-conversion -DLINUX_PLATFORM)
-target_link_libraries(example curl websockets cjson)
+target_link_libraries(example curl websockets cjson mosquitto)
 
 # this lets me include files relative to the root source directory with a <> pair
 target_include_directories(example PUBLIC ../main/components ../main/components/objects ../main/linux /usr/include/cjson ../main)

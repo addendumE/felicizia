@@ -30,6 +30,7 @@ void Device::setFreeHeap(float fh)
 	setPropertyValueFloat(PROP_FREE_HEAP,fh);
 }
 
+#ifndef LINUX_PLATFORM
 #include "mbedtls/md5.h"
 #include "esp_mac.h"
 
@@ -56,3 +57,9 @@ void Device::getUid()
 		uid.append(tmp);
 	}
 }
+#else
+void Device::getUid()
+{
+	uid="LINUX_PLATDORM_DEBUG";
+}
+#endif

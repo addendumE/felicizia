@@ -49,6 +49,8 @@ void MainApp::start()
 	WifiManager::apHdr = "felicizia";
 	persistance->setUid(dataManager->getUid());
 	ESP_LOGI(TAG,"UID:%s",dataManager->getUid().c_str());
+	ESP_LOGI(TAG,"SSID:%s",WifiManager::ssid.c_str());
+	ESP_LOGI(TAG,"MQTT:%s",dataManager->getUid().c_str());
 
 	if (ssid.size())
 	{
@@ -99,12 +101,14 @@ void MainApp::onMode(WifiManager::Mode mode)
 	ESP_LOGI(TAG,"wifi mode now is: %d",mode);
 	if (mode == WifiManager::WIFI_CLI_OK)
 	{
+#ifndef LINUX_PLATFORM
 		ESP_LOGI(TAG, "Initializing SNTP");
 		esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
 		esp_sntp_setservername(0, "pool.ntp.org");
 		esp_sntp_init();
 		setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
 		tzset();
+#endif
 		startMqtt();
 	}
 	if (mode == WifiManager::WIFI_CLI_FAIL)

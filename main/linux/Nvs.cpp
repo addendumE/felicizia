@@ -31,12 +31,12 @@ bool Nvs::getString(string key, string &value)
 {
 	std::ifstream file(ns+"_"+key);
 	// confirm file opening
-	if (!file.is_open()) {
+	//if (!file.is_open()) {
 	        // print error message and return
-	        cerr << "Failed to open file: " << ns+"_"+key << endl;
-	}
+	        //cerr << "Failed to open file: " << ns+"_"+key << endl;
+	//}
 	getline(file, value);
-    printf("********* %s=%s ********\n",key.c_str(),value.c_str());
+   // printf("********* %s=%s ********\n",key.c_str(),value.c_str());
     return true;
 }
 

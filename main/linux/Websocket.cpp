@@ -23,7 +23,7 @@ Websocket::Websocket():
 	   	.mount_next = &mount_api,      // IMPORTANTISSIMO: chain dei mount
 	    .mountpoint = "/",                // URL base
 	    .origin = "HTML",             // directory locale da servire
-	    .def = "indexJQ.html",              // file di default
+	    .def = "index.html",              // file di default
 		.protocol = "http",
 	    .origin_protocol = LWSMPRO_FILE,  // serve file dal filesystem
 	    .mountpoint_len = 1

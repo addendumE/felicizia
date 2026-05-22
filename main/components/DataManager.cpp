@@ -277,12 +277,15 @@ void DataManager::doOutput()
     mcp23x17_port_write(&mcp23x17Dev,out);
     gpio_set_level(POMPA_SERBATOIO_GPIO,cmdPompaIrrigazione.getValue());
     gpio_set_level(POMPA_FOSSO_GPIO,cmdPompaRiempimento.getValue());
-#endif
+
     int state = gpio_get_level(IN_BOOT_BUTTON);
     if (state != last_state && state == 0) {
         if (bootButtonCallBack) bootButtonCallBack();
     }
     last_state = state;
+#endif    
+    
+
 }
 
 bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi, float start, float end) {
