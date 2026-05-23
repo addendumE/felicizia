@@ -2,11 +2,14 @@
 
 #include "ObjManager.h"
 #include "Types.h"
+#include "Lock.h"
 class Protocol {
 public:
 	Protocol(ObjManager &);
 	virtual ~Protocol();
-	string propChangeNotification(string objId,Types::PropertyId);
+	void propChangeNotification(string objId,Types::PropertyId);
+	string commitPropChange();
+
 	string onMessage(const string&);
 private:
 	enum handleResult
@@ -18,6 +21,8 @@ private:
 		RES_ERR_INTERNAL
 	};
 	ObjManager &om;
+	cJSON *jPropChangeArray;
+	Lock lck;
 	handleResult handleObjList(cJSON *jReq,cJSON **jResp);
 	handleResult handleObjTypes(cJSON *jReq,cJSON **jResp);
 	handleResult handleObj(cJSON *jReq,cJSON **jResp);

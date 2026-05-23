@@ -23,9 +23,20 @@ public:
 		nvs(nvs),
 		ts(ts),
 		mqtt(mqtt),
-		websocket(websocket)
-	{
+		websocket(websocket),
+		propChangeTimer("TIM",100)
+{
 
+		propChangeTimer.onExpired([&]()
+		{
+			string msg =protocol.commitPropChange();
+			if (!msg.empty())
+			{
+				mqtt.publish(pubtopic,msg);
+				ESP_LOGI("PER","mqtt msg %s %s",pubtopic.c_str(),msg.c_str());
+				websocket.send(msg);	
+			}
+		});
 	};
 	virtual ~MyPersistence(){};
 	void setUid(std::string _uid)
@@ -34,9 +45,11 @@ public:
 	}
 	void changeNotify(string objId, PropertyId p)
 	{
-		string msg =protocol.propChangeNotification(objId,p);
-		mqtt.publish(pubtopic,msg);
-		websocket.send(msg);
+		protocol.propChangeNotification(objId,p);
+		propChangeTimer.start();
+		//string msg =protocol.commitPropChange();
+		//mqtt.publish(pubtopic,msg);
+		//websocket.send(msg);
 		//om.propChangeNotification(objId,p);
 	}
 	bool loadFloat(string id, PropertyId p, float &value)
@@ -106,6 +119,8 @@ private:
 	MqttClient &mqtt;
 	Websocket &websocket;
 	std::string pubtopic;
+	Timer propChangeTimer;
+
 };
 
 

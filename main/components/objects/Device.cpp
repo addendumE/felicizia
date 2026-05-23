@@ -60,6 +60,6 @@ void Device::getUid()
 #else
 void Device::getUid()
 {
-	uid="LINUX_PLATDORM_DEBUG";
+	uid="863E102EBC342E20";
 }
 #endif

@@ -167,7 +167,7 @@
         switch(obj.id) {
             case "getObjectList": renderMainList(obj.data); break;
             case "getObject": renderProperties(obj.data); break;
-            case "propChange": handlePropChange(obj.data); break;
+            case "propChange": obj.data.forEach(item => handlePropChange(item)); break;
         }
     }
 
@@ -272,7 +272,10 @@
             const inputEl = detailContainer.querySelector('input, select');
             if (inputEl) {
                 if (inputEl.type === 'checkbox') {
-                    inputEl.checked = data.value;
+                    inputEl.checked = (data.value === true || 
+                                     data.value === "true" || 
+                                     data.value === 1 || 
+                                     data.value === "1");
                 } else {
                     inputEl.value = data.value;
                 }

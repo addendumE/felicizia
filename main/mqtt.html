@@ -541,7 +541,8 @@
 
             case "propChange":
 
-                handlePropChange(obj.data);
+                // Assumiamo che obj.data sia sempre un array di cambiamenti
+                obj.data.forEach(item => handlePropChange(item));
 
                 break;
         }

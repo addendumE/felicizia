@@ -10,34 +10,45 @@
 static const char *TAG="PROTOCOL";
 
 Protocol::Protocol(ObjManager &om):
-om(om)
+om(om),
+jPropChangeArray(nullptr)
 {
 }
 
 Protocol::~Protocol() {
-
 }
 
 
-string Protocol::propChangeNotification(const string objId,Types::PropertyId id)
+string Protocol::commitPropChange()
 {
 	string msg;
-	cJSON * jProp = om.getPropertyJSONvalue(objId,id);
-
-	if (jProp)
-	{
-		cJSON *jResp = cJSON_CreateObject();
-		string sid = objId+"_"+getPropertyName(id);
-		cJSON_AddStringToObject(jProp, "id", sid.c_str());
-		cJSON_AddItemToObject(jResp, "data", jProp);
-		cJSON_AddStringToObject(jResp, "id", "propChange");
-		char *txt = cJSON_PrintUnformatted(jResp);
-		msg = txt;
-		free(txt);
-		cJSON_Delete(jResp);
-	}
+	lck.take();
+	cJSON *jResp = cJSON_CreateObject();
+	cJSON_AddItemToObject(jResp, "data", jPropChangeArray);
+	cJSON_AddStringToObject(jResp, "id", "propChange");
+	char *txt = cJSON_PrintUnformatted(jResp);
+	msg = txt;
+	free(txt);
+	cJSON_Delete(jResp);
+	jPropChangeArray = nullptr;
+	lck.give();
 	return msg;
 }
+
+void Protocol::propChangeNotification(const string objId,Types::PropertyId id)
+{
+	lck.take();
+	if (jPropChangeArray == nullptr) jPropChangeArray = cJSON_CreateArray();
+	cJSON * jProp = om.getPropertyJSONvalue(objId,id);
+	if (jProp)
+	{
+		string sid = objId+"_"+getPropertyName(id);
+		cJSON_AddStringToObject(jProp, "id", sid.c_str());
+		cJSON_AddItemToArray(jPropChangeArray,jProp);
+	}
+	lck.give();
+}
+
 string Protocol::onMessage(const string &msg)
 {
 	cJSON *jReq = cJSON_Parse(msg.c_str());
