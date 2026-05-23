@@ -33,7 +33,7 @@ public:
 			if (!msg.empty())
 			{
 				mqtt.publish(pubtopic,msg);
-				ESP_LOGI("PER","mqtt msg %s %s",pubtopic.c_str(),msg.c_str());
+				//ESP_LOGI("PER","mqtt msg %s %s",pubtopic.c_str(),msg.c_str());
 				websocket.send(msg);	
 			}
 		});

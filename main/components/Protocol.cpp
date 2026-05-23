@@ -25,7 +25,7 @@ string Protocol::commitPropChange()
 	lck.take();
 	cJSON *jResp = cJSON_CreateObject();
 	cJSON_AddItemToObject(jResp, "data", jPropChangeArray);
-	cJSON_AddStringToObject(jResp, "id", "propChange");
+	cJSON_AddStringToObject(jResp, "cmd", "propChange");
 	char *txt = cJSON_PrintUnformatted(jResp);
 	msg = txt;
 	free(txt);
@@ -107,12 +107,23 @@ string Protocol::onMessage(const string &msg)
 	{
 		res = RES_OK;
 	}
+	else if (cmd == "readConf")
+	{
+		handleConfRead(jDataReq,&jDataResp);
+		res = RES_OK;
+	}
+	else if (cmd == "writeConf")
+	{
+		handleConfWrite(jDataReq,&jDataResp);
+		res = RES_OK;
+	}
 	if (jDataResp)
 	{
 		cJSON_AddItemToObject(jResp,"data",jDataResp);
 	}
 
 	cJSON_AddStringToObject(jResp, "id",id.c_str());
+	cJSON_AddStringToObject(jResp, "cmd",cmd.c_str());
 	switch (res)
 	{
 		case RES_OK:
@@ -204,3 +215,31 @@ Protocol::handleResult Protocol::handleProperySet(cJSON *jReq,cJSON **jResp)
 	}
 	return ret;
 }
+
+Protocol::handleResult Protocol::handleConfRead(cJSON *jReq,cJSON **jResp)
+{
+	Protocol::handleResult ret = RES_OK;
+	string conf;
+	om.getConf(conf);
+	*jResp = cJSON_CreateString(conf.c_str());
+	return ret;
+}
+
+Protocol::handleResult Protocol::handleConfWrite(cJSON *jReq,cJSON **jResp)
+{
+	Protocol::handleResult ret = RES_OK;
+	cJSON *jTmp = cJSON_GetObjectItem(jReq,"config");
+	if (cJSON_IsString(jTmp))
+	{
+		string conf=cJSON_GetStringValue(jTmp);
+		ret = om.setConf(conf) ? RES_OK:RES_ERR_INTERNAL;
+	}
+	else
+	{
+		ESP_LOGE(TAG,"format error");
+		ret = RES_ERR_INTERNAL;
+	}
+	return ret;
+}
+	
+

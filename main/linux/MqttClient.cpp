@@ -156,7 +156,7 @@ void MqttClient::on_disconnect_callback(struct mosquitto *mosq, void *obj, int r
 
 void MqttClient::on_publish_callback(struct mosquitto *mosq, void *obj, int mid) {
     // MqttClient *client = static_cast<MqttClient*>(obj);
-    ESP_LOGD(TAG, "Message with mid %d has been published.", mid);
+    //ESP_LOGD(TAG, "Message with mid %d has been published.", mid);
 }
 
 void MqttClient::on_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {

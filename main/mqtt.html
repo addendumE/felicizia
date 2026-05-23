@@ -251,6 +251,24 @@
         Dettagli
     </h2>
 
+    <div id="devTools" style="margin:20px 0; padding:15px; border:2px solid #ccc; border-radius:8px;" class="hidden">
+        <h3 style="margin-top:0;">Strumenti DEV</h3>
+        
+        <button onclick="rebootDevice()" style="background:#f44336; margin-bottom:15px;">
+            Reboot Device
+        </button>
+
+        <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px;">Configurazione (.conf)</label>
+            <input type="file" id="devConfFile" accept=".conf" style="margin-bottom:5px; width:100%;">
+            <button onclick="uploadConfig()">Upload Config via MQTT</button>
+        </div>
+
+        <button onclick="downloadConfig()">
+            Download Config via MQTT
+        </button>
+    </div>
+
     <table>
         <tbody id="propertyList"></tbody>
     </table>
@@ -279,6 +297,7 @@
 
     let mqttClient;
     let pingInterval;
+    let id = crypto.randomUUID();
 
     // =========================
     // CONFIG
@@ -410,14 +429,12 @@
                     pingInterval = setInterval(() => {
 
                         sendRequest(
-                            "ping",
                             "ping"
                         );
 
                     }, 5000);
 
                     sendRequest(
-                        "getObjectList",
                         "getObjectList"
                     );
                 }
@@ -469,7 +486,6 @@
     }
 
     function sendRequest(
-        id,
         cmd,
         data = null
     ) {
@@ -525,7 +541,7 @@
 
     function handleMessage(obj) {
 
-        switch(obj.id) {
+        switch(obj.cmd) {
 
             case "getObjectList":
 
@@ -544,6 +560,27 @@
                 // Assumiamo che obj.data sia sempre un array di cambiamenti
                 obj.data.forEach(item => handlePropChange(item));
 
+                break;
+
+            case "readConf":
+                if (obj.result === "OK") {
+                    const blob = new Blob([obj.data], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'device_config.conf';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert("Errore download: " + obj.result);
+                }
+                break;
+
+            case "writeConf":
+            case "reboot":
+                alert(obj.id + ": " + obj.result);
                 break;
         }
     }
@@ -611,7 +648,6 @@
 
         sendRequest(
             "getObject",
-            "getObject",
             {
                 objId: id
             }
@@ -629,6 +665,10 @@
             document.getElementById(
                 'propertyList'
             );
+
+        const devTools = document.getElementById('devTools');
+        if (data.properties.type.value === 'DEV') devTools.classList.remove('hidden');
+        else devTools.classList.add('hidden');
 
         list.innerHTML = '';
 
@@ -733,7 +773,6 @@
                     : el.value;
 
             sendRequest(
-                "sp",
                 "setProperty",
                 {
                     objId,
@@ -744,6 +783,36 @@
         };
 
         container.appendChild(el);
+    }
+
+    function rebootDevice() {
+        if (confirm("Inviare comando di reboot ?")) {
+            sendRequest("reboot");
+        }
+    }
+
+    function downloadConfig() {
+        sendRequest("readConf");
+    }
+
+    function uploadConfig() {
+        const fileInput = document.getElementById('devConfFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert("Seleziona un file .conf");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            sendRequest("writeConf", {
+                config: e.target.result
+            });
+            alert("Configurazione inviata via MQTT, attendi conferma...");
+        };
+        reader.onerror = () => alert("Errore lettura file");
+        reader.readAsText(file);
     }
 
     // =========================

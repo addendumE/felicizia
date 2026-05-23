@@ -79,6 +79,7 @@ void MainApp::startMqtt()
 		{
 			ESP_LOGI(TAG,"mqtt msg %s %s",topic.c_str(),payload.c_str());
 			string resp = protocol->onMessage(payload);
+			ESP_LOGI("PER","mqtt msg %s %s",payload.c_str(),resp.c_str());
 			mqtt->publish(dataManager->getUid()+"/Uplink",resp);
 		});
 	mqtt->setOnConnectCallback([&]()

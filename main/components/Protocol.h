@@ -27,4 +27,7 @@ private:
 	handleResult handleObjTypes(cJSON *jReq,cJSON **jResp);
 	handleResult handleObj(cJSON *jReq,cJSON **jResp);
 	handleResult handleProperySet(cJSON *jReq,cJSON **jResp);
+	handleResult handleConfRead(cJSON *jReq,cJSON **jResp);
+	handleResult handleConfWrite(cJSON *jReq,cJSON **jResp);
+
 };

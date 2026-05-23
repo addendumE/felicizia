@@ -42,6 +42,7 @@ void ObjManager::getConf(string &s)
 }
 bool ObjManager::setConf(string &s)
 {
+	ESP_LOGI(TAG,"setConf %s",s.c_str());
 	bool ret = true;
 	cJSON *jObj = cJSON_Parse(s.c_str());
 	if (jObj == NULL)
