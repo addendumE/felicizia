@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <esp_log.h>
 static const char *TAG="DM";
+#define IICdebug
 
 #define POMPA_SERBATOIO_GPIO    GPIO_NUM_8
 #define POMPA_FOSSO_GPIO        GPIO_NUM_5
@@ -13,7 +14,7 @@ static const char *TAG="DM";
 DataManager::DataManager (ObjManager &om,Persistance &persistance,Hal &hal):
 Thread("dataManager"),
 om(om),
-#ifndef LINUX_PLATFORM
+#if !defined(LINUX_PLATFORM) && !defined(IICdebug)
 mcp23x17Dev({}),
 ads11xDev({}),
 #endif
@@ -82,7 +83,7 @@ oldOut({})
     om.addObject(&ledErrorePompaSerbatoio);
     om.addObject(&feedbackPompaCanale);
     om.addObject(&feedbackPompaSerbatoio);
-#ifndef LINUX_PLATFORM    
+#if !defined(LINUX_PLATFORM) && !defined(IICdebug)
     mcp23x17Dev.port = I2C_NUM_0;
     mcp23x17Dev.addr = MCP23X17_ADDR_BASE;
     mcp23x17Dev.cfg.sda_io_num = GPIO_NUM_6;
@@ -160,7 +161,7 @@ return device.getPropertyValueString(PROP_UID);
 bool DataManager::adcRead(ads111x_mux_t mux, float &res)
 {
     bool ret = false;
-#ifdef LINUX_PLATFORM
+#if defined(LINUX_PLATFORM) || defined(IICdebug)
     res =0.0f;
     return true;
 #else
@@ -228,7 +229,7 @@ void DataManager::doInput()
 
     // ROTARY SWITCHES
     uint16_t digital = 0;
-#ifndef LINUX_PLATFORM
+#if !defined(LINUX_PLATFORM) && !defined(IICdebug)
     mcp23x17_port_read(&mcp23x17Dev,&digital);
     ESP_LOGI(TAG,"%04X",digital);
 #endif
@@ -273,7 +274,7 @@ void DataManager::doOutput()
     {
         out |= 0x8000;
     }
-#ifndef LINUX_PLATFORM
+#if !defined(LINUX_PLATFORM) && !defined(IICdebug)
     mcp23x17_port_write(&mcp23x17Dev,out);
     gpio_set_level(POMPA_SERBATOIO_GPIO,cmdPompaIrrigazione.getValue());
     gpio_set_level(POMPA_FOSSO_GPIO,cmdPompaRiempimento.getValue());
@@ -485,4 +486,9 @@ void DataManager::loop()
             
         }
     }
+}
+
+void DataManager::setDeviceStatus(const string &status)
+{
+    device.setPropertyValueString(Types::PROP_VALUE,status);
 }

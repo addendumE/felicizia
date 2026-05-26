@@ -163,10 +163,8 @@ void MqttClient::on_message_callback(struct mosquitto *mosq, void *obj, const st
     MqttClient *client = static_cast<MqttClient*>(obj);
     if (message->payloadlen) {
         std::string topic(message->topic);
-        std::string payload(static_cast<char*>(message->payload), message->payloadlen);
-        ESP_LOGI(TAG, "Received message: Topic: %s, Payload: %s", topic.c_str(), payload.c_str());
         if (client->onMessageCb) {
-            client->onMessageCb(topic, payload);
+            client->onMessageCb(topic, (const char*)message->payload, message->payloadlen,0,0);
         }
     } else {
         ESP_LOGI(TAG, "Received message (null payload): Topic: %s", message->topic);

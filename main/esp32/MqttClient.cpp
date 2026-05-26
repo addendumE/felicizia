@@ -102,11 +102,13 @@ void MqttClient::handleEvent(esp_mqtt_event_handle_t event) {
             ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
             break;
         case MQTT_EVENT_DATA: {
+            if (event->current_data_offset == 0)
+            {
+                topic = std::string(event->topic, event->topic_len);
+            }
             // I parametri topic e data all'interno dell'evento non sono 'null-terminated' (terminati con '\0')
-            std::string topic(event->topic, event->topic_len);
-            std::string payload(event->data, event->data_len);
-            ESP_LOGI(TAG, "MQTT_EVENT_DATA %s",payload.c_str());
-            if (onMessageCb) onMessageCb(topic, payload);
+            
+            if (onMessageCb) onMessageCb(topic, event->data, event->data_len,event->current_data_offset,event->total_data_len);
             break;
         }
         case MQTT_EVENT_ERROR:

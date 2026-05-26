@@ -15,6 +15,12 @@
 #include "UsRange.h"
 #include "MqttClient.h"
 
+#include "esp_ota_ops.h"
+#include "esp_flash_partitions.h"
+#include "esp_partition.h"
+#include "esp_image_format.h"
+
+
 class MyPersistence: public Persistance {
 public:
 	MyPersistence(Protocol &protocol, ObjManager &om, Nvs &nvs, ThingSpeak &ts, MqttClient &mqtt, Websocket &websocket):
@@ -150,6 +156,9 @@ private:
 	
 	Hal hal;
 	DataManager *dataManager;
+	esp_ota_handle_t ota_update_handle;
+	const esp_partition_t *ota_update_partition;
+
 	void onMode(WifiManager::Mode mode);
 	void startMqtt();
 	void onMessage(const string&);
@@ -165,5 +174,10 @@ private:
 	bool onConfigWrite(string &s) {
 		return objManager->setConf(s);
 	}
+
+	esp_err_t otaStart();
+	esp_err_t otaProcess(const char *data, size_t len, int pct);
+	esp_err_t otaEnd();
+
 
 };

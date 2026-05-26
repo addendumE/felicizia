@@ -10,7 +10,7 @@
 class MqttClient : public Thread, public Lock { // Inherit from Thread to run the loop, and Lock for thread safety
 public:
     // Tipi per le callback
-    using MessageCallback = std::function<void(const std::string& topic, const std::string& payload)>;
+    using MessageCallback = std::function<void(const std::string& topic, const char *payload, size_t len,size_t offset, size_t totLen)>;
     using ConnectCallback = std::function<void()>;
     using DisconnectCallback = std::function<void()>;
 

@@ -75,17 +75,38 @@ void MainApp::onMessage(const string& msg)
 void MainApp::startMqtt()
 {
 
-		mqtt->setOnMessageCallback([&](const std::string& topic, const std::string& payload)
+		mqtt->setOnMessageCallback([&](const std::string& topic, const char * payload, size_t datasize,size_t offset, size_t totLen)
 		{
-			ESP_LOGI(TAG,"mqtt msg %s %s",topic.c_str(),payload.c_str());
-			string resp = protocol->onMessage(payload);
-			ESP_LOGI("PER","mqtt msg %s %s",payload.c_str(),resp.c_str());
-			mqtt->publish(dataManager->getUid()+"/Uplink",resp);
+			ESP_LOGI(TAG,"OnMessageCallback topic %s %d %d %d",topic.c_str(),datasize,offset,totLen);
+
+			if (topic==dataManager->getUid()+"/Firmware")
+			{
+#ifdef LINUX_PLATFORM
+				otaStart();
+				otaProcess(payload,datasize);
+				otaEnd();
+#else
+				if (offset == 0) {
+					otaStart();
+				}	
+				otaProcess(payload,datasize, 100*offset/totLen);
+				if ((offset + datasize) == totLen) {
+					otaEnd();
+				}
+#endif
+			}
+			else if (topic==dataManager->getUid()+"/Downlink")
+			{
+				string _payload(payload,payload+datasize);
+				string resp = protocol->onMessage(_payload);
+				mqtt->publish(dataManager->getUid()+"/Uplink",resp);
+			}
 		});
 	mqtt->setOnConnectCallback([&]()
 		{
 			ESP_LOGI(TAG,"mqtt connected");
 			mqtt->subscribe(dataManager->getUid()+"/Downlink");
+			mqtt->subscribe(dataManager->getUid()+"/Firmware");
 			
 		});
 	mqtt->setOnDisconnectCallback([&]()
@@ -117,4 +138,69 @@ void MainApp::onMode(WifiManager::Mode mode)
 		vTaskDelay(pdMS_TO_TICKS(1000));
 		join();
 	}
+}
+
+
+
+esp_err_t MainApp::otaStart()
+{
+	esp_err_t err;
+    ESP_LOGI(TAG, "Starting OTA");
+    const esp_partition_t *configured = esp_ota_get_boot_partition();
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    if(configured==NULL || running == NULL)
+    {
+        ESP_LOGE(TAG,"OTA data not found");
+        return ESP_FAIL;
+    }
+
+    if (configured != running)
+    {
+        ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08lx, but running from offset 0x%08lx",
+                 configured->address, running->address);
+        ESP_LOGW(TAG, "(This can happen if either the OTA boot data or preferred boot image become corrupted somehow.)");
+    }
+    ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08lx)",
+             running->type, running->subtype, running->address);
+
+    ota_update_partition = esp_ota_get_next_update_partition(NULL);
+    ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%lx",
+             ota_update_partition->subtype, ota_update_partition->address);
+
+    err = esp_ota_begin(ota_update_partition, OTA_SIZE_UNKNOWN, &ota_update_handle);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "esp_ota_begin failed ");
+        return ESP_FAIL;
+    }
+    ESP_LOGI(TAG, "esp_ota_begin succeeded");
+    return ESP_OK;	
+}
+esp_err_t MainApp::otaProcess(const char *data, size_t len, int pct)
+{
+	ESP_LOGI(TAG,"otaProcess %d bytes",len);
+	char tmp[64];
+	snprintf(tmp,sizeof(tmp),"UPG %d %%",pct);
+	dataManager->setDeviceStatus(std::string(tmp));
+	return esp_ota_write(ota_update_handle, (const void *)data, len);
+
+}
+esp_err_t MainApp::otaEnd()
+{
+	ESP_LOGI(TAG,"otaEnd");
+	 esp_err_t err = esp_ota_end(ota_update_handle);
+	 if (err != ESP_OK) {
+		 if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
+			 ESP_LOGE(TAG, "Image validation failed, image is corrupted");
+	     }
+	     ESP_LOGE(TAG, "esp_ota_end failed (%s)!", esp_err_to_name(err));
+	     return ESP_FAIL;
+	 }
+	 err = esp_ota_set_boot_partition(ota_update_partition);
+	 if (err != ESP_OK) {
+	     ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)!", esp_err_to_name(err));
+	     return ESP_FAIL;
+	 }
+
+	 return err;
 }

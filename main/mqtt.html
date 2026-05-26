@@ -338,6 +338,11 @@
         return `${mqttConfig.masterTopic}/Downlink`;
     }
 
+    function getFirmwareTopic() {
+
+        return `${mqttConfig.masterTopic}/Firmware`;
+    }
+
     function getUplinkTopic() {
 
         return `${mqttConfig.masterTopic}/Uplink`;
@@ -840,7 +845,8 @@
                     reader.onload = (e) => {
                         const firmwareData = new Uint8Array(e.target.result);
                         if (mqttClient && mqttClient.connected) {
-                            mqttClient.publish(getDownlinkTopic() + "/Firmware", firmwareData, { qos: 1 });
+                            mqttClient.publish(getFirmwareTopic(), firmwareData, { qos: 1 });
+                            console.log("Firmware inviato via MQTT:",firmwareData.length, "bytes su",getFirmwareTopic());
                         }
                         alert("Firmware inviato via MQTT, attendi conferma...");
                     };

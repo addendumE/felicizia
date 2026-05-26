@@ -9,7 +9,7 @@
 class MqttClient {
 public:
     // Tipi per le callback
-    using MessageCallback = std::function<void(const std::string& topic, const std::string& payload)>;
+    using MessageCallback = std::function<void(const std::string& topic, const  char * payload, size_t len,size_t offset, size_t totLen)>;
     using ConnectCallback = std::function<void()>;
     using DisconnectCallback = std::function<void()>;
 
@@ -33,6 +33,7 @@ private:
     ConnectCallback onConnectCb;
     DisconnectCallback onDisconnectCb;
     bool connected;
+    std::string topic;
     // Gestore degli eventi statico richiesto da esp_event
     static void mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data);
     void handleEvent(esp_mqtt_event_handle_t event);

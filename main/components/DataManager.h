@@ -1,4 +1,4 @@
-#define LINUX_PLATFORM
+#define NO_IIC_DEBUG
 #include "Thread.h"
 #include "ObjManager.h"
 #include "Persistance.h"
@@ -41,6 +41,7 @@ public:
     string getKey();
     string getMqttUri();
     string getUid();
+    void setDeviceStatus(const string &status);
     using ButtonCallBack = std::function<void(void)>;
     void onBootButton(ButtonCallBack cb) {
         bootButtonCallBack = cb;

@@ -42,7 +42,6 @@ void ObjManager::getConf(string &s)
 }
 bool ObjManager::setConf(string &s)
 {
-	ESP_LOGI(TAG,"setConf %s",s.c_str());
 	bool ret = true;
 	cJSON *jObj = cJSON_Parse(s.c_str());
 	if (jObj == NULL)
@@ -64,7 +63,6 @@ bool ObjManager::setConf(string &s)
 			if (o) {
 				while(jProperty)
 				{
-					
 					string sProp=string(jProperty->string);
 					string sVal=string(jProperty->valuestring);
 					Property::SetResult setRes = o->setProperyValueFromString(sProp,sVal);
