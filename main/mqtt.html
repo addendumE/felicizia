@@ -264,6 +264,12 @@
             <button onclick="uploadConfig()">Upload Config via MQTT</button>
         </div>
 
+        <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px;">Firmware (.bin)</label>
+            <input type="file" id="devFirmwareFile" accept=".bin" style="margin-bottom:5px; width:100%;">
+            <button onclick="uploadFirmware()">Upload Firmware via MQTT</button>
+        </div>
+
         <button onclick="downloadConfig()">
             Download Config via MQTT
         </button>
@@ -580,409 +586,435 @@
 
             case "writeConf":
             case "reboot":
-                alert(obj.id + ": " + obj.result);
-                break;
-        }
-    }
-
-    // =========================
-    // MAIN LIST
-    // =========================
-
-    function renderMainList(data) {
-
-        const list =
-            document.getElementById('mainList');
-
-        list.innerHTML = data.map(v => `
-
-            <tr onclick="viewDetails('${v.id}')">
-
-                <td>${v.type}</td>
-
-                <td>
-                    <strong>${v.name}</strong>
-                </td>
-
-                <td id="val_${v.id}">
-                    ${v.svalue}
-                </td>
-
-                <td>
-
-                    <span
-                        id="fail_${v.id}"
-                        class="icon icon-fail ${v.fail==='yes'?'':'hidden'}">
-                    </span>
-
-                    <span
-                        id="lock_${v.id}"
-                        class="icon icon-lock ${v.override==='yes'?'':'hidden'}">
-                    </span>
-
-                </td>
-
-            </tr>
-
-        `).join('');
-    }
-
-    function viewDetails(id) {
-
-        sessionStorage.setItem(
-            "objectId",
-            id
-        );
-
-        location.hash = '#objDetails';
-    }
-
-    // =========================
-    // DETAILS
-    // =========================
-
-    function loadObjDetails() {
-
-        const id =
-            sessionStorage.getItem("objectId");
-
-        sendRequest(
-            "getObject",
-            {
-                objId: id
-            }
-        );
-    }
-
-    function renderProperties(data) {
-
-        document.getElementById(
-            'objName'
-        ).innerText =
-            `[${data.properties.type.value}] ${data.properties.name.value}`;
-
-        const list =
-            document.getElementById(
-                'propertyList'
-            );
-
-        const devTools = document.getElementById('devTools');
-        if (data.properties.type.value === 'DEV') devTools.classList.remove('hidden');
-        else devTools.classList.add('hidden');
-
-        list.innerHTML = '';
-
-        for (let prop in data.properties) {
-
-            if (
-                prop === "name" ||
-                prop === "type"
-            ) continue;
-
-            const p =
-                data.properties[prop];
-
-            const row =
-                document.createElement('tr');
-
-            row.innerHTML =
-                `<td>${prop}</td>
-                 <td id="ui_${data.id}_${prop}"></td>`;
-
-            list.appendChild(row);
-
-            const container =
-                document.getElementById(
-                    `ui_${data.id}_${prop}`
-                );
-
-            renderInput(
-                container,
-                data.id,
-                prop,
-                p
-            );
-        }
-    }
-
-    function renderInput(
-        container,
-        objId,
-        propId,
-        p
-    ) {
-
-        let el;
-
-        switch(p.type) {
-
-            case 0:
-
-                el =
-                    document.createElement('input');
-
-                el.type = 'checkbox';
-
-                el.checked = p.value;
-
-                break;
-
-            case 4:
-
-                el =
-                    document.createElement('select');
-
-                for(let val in p.options) {
-
-                    const opt =
-                        new Option(
-                            p.options[val],
-                            val
-                        );
-
-                    if(val == p.value)
-                        opt.selected = true;
-
-                    el.add(opt);
+                        alert(obj.id + ": " + obj.result);
+                        break;
+                    
+                    case "writeFirmware":
+                    case "writeConf":
+                    case "reboot":
+                        alert(obj.id + ": " + obj.result);
+                        break;
                 }
-
-                break;
-
-            default:
-
-                el =
-                    document.createElement('input');
-
-                el.type =
-                    (p.type === 1 ||
-                     p.type === 2)
-                        ? 'number'
-                        : 'text';
-
-                el.value = p.value;
-        }
-
-        if (!p.rw)
-            el.disabled = true;
-
-        el.onchange = () => {
-
-            const val =
-                el.type === 'checkbox'
-                    ? el.checked.toString()
-                    : el.value;
-
-            sendRequest(
-                "setProperty",
-                {
+                }
+                
+                // =========================
+                // MAIN LIST
+                // =========================
+                
+                function renderMainList(data) {
+                
+                    const list =
+                        document.getElementById('mainList');
+                
+                    list.innerHTML = data.map(v => `
+                
+                        <tr onclick="viewDetails('${v.id}')">
+                
+                            <td>${v.type}</td>
+                
+                            <td>
+                                <strong>${v.name}</strong>
+                            </td>
+                
+                            <td id="val_${v.id}">
+                                ${v.svalue}
+                            </td>
+                
+                            <td>
+                
+                                <span
+                                    id="fail_${v.id}"
+                                    class="icon icon-fail ${v.fail==='yes'?'':'hidden'}">
+                                </span>
+                
+                                <span
+                                    id="lock_${v.id}"
+                                    class="icon icon-lock ${v.override==='yes'?'':'hidden'}">
+                                </span>
+                
+                            </td>
+                
+                        </tr>
+                
+                    `).join('');
+                }
+                
+                function viewDetails(id) {
+                
+                    sessionStorage.setItem(
+                        "objectId",
+                        id
+                    );
+                
+                    location.hash = '#objDetails';
+                }
+                
+                // =========================
+                // DETAILS
+                // =========================
+                
+                function loadObjDetails() {
+                
+                    const id =
+                        sessionStorage.getItem("objectId");
+                
+                    sendRequest(
+                        "getObject",
+                        {
+                            objId: id
+                        }
+                    );
+                }
+                
+                function renderProperties(data) {
+                
+                    document.getElementById(
+                        'objName'
+                    ).innerText =
+                        `[${data.properties.type.value}] ${data.properties.name.value}`;
+                
+                    const list =
+                        document.getElementById(
+                            'propertyList'
+                        );
+                
+                    const devTools = document.getElementById('devTools');
+                    if (data.properties.type.value === 'DEV') devTools.classList.remove('hidden');
+                    else devTools.classList.add('hidden');
+                
+                    list.innerHTML = '';
+                
+                    for (let prop in data.properties) {
+                
+                        if (
+                            prop === "name" ||
+                            prop === "type"
+                        ) continue;
+                
+                        const p =
+                            data.properties[prop];
+                
+                        const row =
+                            document.createElement('tr');
+                
+                        row.innerHTML =
+                            `<td>${prop}</td>
+                             <td id="ui_${data.id}_${prop}"></td>`;
+                
+                        list.appendChild(row);
+                
+                        const container =
+                            document.getElementById(
+                                `ui_${data.id}_${prop}`
+                            );
+                
+                        renderInput(
+                            container,
+                            data.id,
+                            prop,
+                            p
+                        );
+                    }
+                }
+                
+                function renderInput(
+                    container,
                     objId,
                     propId,
-                    value: val
+                    p
+                ) {
+                
+                    let el;
+                
+                    switch(p.type) {
+                
+                        case 0:
+                
+                            el =
+                                document.createElement('input');
+                
+                            el.type = 'checkbox';
+                
+                            el.checked = p.value;
+                
+                            break;
+                
+                        case 4:
+                
+                            el =
+                                document.createElement('select');
+                
+                            for(let val in p.options) {
+                
+                                const opt =
+                                    new Option(
+                                        p.options[val],
+                                        val
+                                    );
+                
+                                if(val == p.value)
+                                    opt.selected = true;
+                
+                                el.add(opt);
+                            }
+                
+                            break;
+                
+                        default:
+                
+                            el =
+                                document.createElement('input');
+                
+                            el.type =
+                                (p.type === 1 ||
+                                 p.type === 2)
+                                    ? 'number'
+                                    : 'text';
+                
+                            el.value = p.value;
+                    }
+                
+                    if (!p.rw)
+                        el.disabled = true;
+                
+                    el.onchange = () => {
+                
+                        const val =
+                            el.type === 'checkbox'
+                                ? el.checked.toString()
+                                : el.value;
+                
+                        sendRequest(
+                            "setProperty",
+                            {
+                                objId,
+                                propId,
+                                value: val
+                            }
+                        );
+                    };
+                
+                    container.appendChild(el);
                 }
-            );
-        };
-
-        container.appendChild(el);
-    }
-
-    function rebootDevice() {
-        if (confirm("Inviare comando di reboot ?")) {
-            sendRequest("reboot");
-        }
-    }
-
-    function downloadConfig() {
-        sendRequest("readConf");
-    }
-
-    function uploadConfig() {
-        const fileInput = document.getElementById('devConfFile');
-        const file = fileInput.files[0];
-        
-        if (!file) {
-            alert("Seleziona un file .conf");
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            sendRequest("writeConf", {
-                config: e.target.result
-            });
-            alert("Configurazione inviata via MQTT, attendi conferma...");
-        };
-        reader.onerror = () => alert("Errore lettura file");
-        reader.readAsText(file);
-    }
-
-    // =========================
-    // PROP CHANGE
-    // =========================
-
-    function handlePropChange(data) {
-
-        if (
-            data.id.endsWith('_value') &&
-            !data.id.endsWith('_override_value')
-        ) {
-
-            const id =
-                data.id.replace('_value', '');
-
-            const cell =
-                document.getElementById(
-                    `val_${id}`
-                );
-
-            if (cell)
-                cell.innerText = data.svalue;
-        }
-
-        // Aggiorna il campo nell'interfaccia di dettaglio se l'elemento esiste
-        const detailUi = document.getElementById(`ui_${data.id}`);
-        if (detailUi && detailUi.firstChild) {
-            const el = detailUi.firstChild;
-            if (el.type === 'checkbox') {
-                el.checked = (data.value === true || 
-                             data.value === "true" || 
-                             data.value === 1 || 
-                             data.value === "1");
-            } else {
-                el.value = data.value;
-            }
-        }
-
-        if (data.id.endsWith('_fail')) {
-
-            const id =
-                data.id.replace('_fail', '');
-
-            const icon =
-                document.getElementById(
-                    `fail_${id}`
-                );
-
-            if (icon)
-                icon.classList.toggle(
-                    'hidden',
-                    !data.value
-                );
-        }
-
-        if (data.id.endsWith('_override')) {
-
-            const id =
-                data.id.replace('_override', '');
-
-            const icon =
-                document.getElementById(
-                    `lock_${id}`
-                );
-
-            if (icon)
-                icon.classList.toggle(
-                    'hidden',
-                    !data.value
-                );
-        }
-
-        if (!data.id.includes('ledAlive')) {
-
-            const log =
-                document.getElementById(
-                    'logList'
-                );
-
-            const now =
-                new Date()
-                    .toLocaleTimeString();
-
-            const row =
-                log.insertRow(0);
-
-            row.innerHTML =
-                `<td>${now}</td>
-                 <td>${data.id}</td>
-                 <td>${data.svalue}</td>`;
-
-            if (log.rows.length > 128)
-                log.deleteRow(128);
-        }
-    }
-
-    // =========================
-    // UTILITIES
-    // =========================
-
-    function filterTable() {
-
-        const query =
-            document
-                .getElementById(
-                    'filterInput'
-                )
-                .value
-                .toLowerCase();
-
-        document
-            .querySelectorAll('#mainList tr')
-            .forEach(tr => {
-
-            tr.style.display =
-                tr.innerText
-                    .toLowerCase()
-                    .includes(query)
-                        ? ''
-                        : 'none';
-        });
-    }
-
-    function sortTable(n) {
-
-        const table =
-            document.getElementById(
-                "mainTable"
-            );
-
-        let rows =
-            Array.from(table.rows)
-                .slice(1);
-
-        rows.sort((a, b) =>
-
-            a.cells[n].innerText.localeCompare(
-                b.cells[n].innerText,
-                undefined,
-                {numeric: true}
-            )
-        );
-
-        rows.forEach(row =>
-
-            table.tBodies[0]
-                .appendChild(row)
-        );
-    }
-
-    // =========================
-    // STARTUP
-    // =========================
-
-    document.addEventListener(
-        'DOMContentLoaded',
-        () => {
-
-        document.getElementById(
-            'mqttHost'
-        ).value = mqttConfig.host;
-
-        document.getElementById(
-            'mqttTopic'
-        ).value = mqttConfig.masterTopic;
-
-        mqttConnect();
-    });
-
+                
+                function rebootDevice() {
+                    if (confirm("Inviare comando di reboot ?")) {
+                        sendRequest("reboot");
+                    }
+                }
+                
+                function downloadConfig() {
+                    sendRequest("readConf");
+                }
+                
+                function uploadConfig() {
+                    const fileInput = document.getElementById('devConfFile');
+                    const file = fileInput.files[0];
+                    
+                    if (!file) {
+                        alert("Seleziona un file .conf");
+                        return;
+                    }
+                
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        sendRequest("writeConf", {
+                            config: e.target.result
+                        });
+                        alert("Configurazione inviata via MQTT, attendi conferma...");
+                    };
+                    reader.onerror = () => alert("Errore lettura file");
+                    reader.readAsText(file);
+                }
+                
+                function uploadFirmware() {
+                    const fileInput = document.getElementById('devFirmwareFile');
+                    const file = fileInput.files[0];
+                    
+                    if (!file) {
+                        alert("Seleziona un file .bin");
+                        return;
+                    }
+                
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const firmwareData = new Uint8Array(e.target.result);
+                        if (mqttClient && mqttClient.connected) {
+                            mqttClient.publish(getDownlinkTopic() + "/Firmware", firmwareData, { qos: 1 });
+                        }
+                        alert("Firmware inviato via MQTT, attendi conferma...");
+                    };
+                    reader.onerror = () => alert("Errore lettura file");
+                    reader.readAsArrayBuffer(file);
+                }
+                
+                // =========================
+                // PROP CHANGE
+                // =========================
+                
+                function handlePropChange(data) {
+                
+                    if (
+                        data.id.endsWith('_value') &&
+                        !data.id.endsWith('_override_value')
+                    ) {
+                
+                        const id =
+                            data.id.replace('_value', '');
+                
+                        const cell =
+                            document.getElementById(
+                                `val_${id}`
+                            );
+                
+                        if (cell)
+                            cell.innerText = data.svalue;
+                    }
+                
+                    // Aggiorna il campo nell'interfaccia di dettaglio se l'elemento esiste
+                    const detailUi = document.getElementById(`ui_${data.id}`);
+                    if (detailUi && detailUi.firstChild) {
+                        const el = detailUi.firstChild;
+                        if (el.type === 'checkbox') {
+                            el.checked = (data.value === true || 
+                                         data.value === "true" || 
+                                         data.value === 1 || 
+                                         data.value === "1");
+                        } else {
+                            el.value = data.value;
+                        }
+                    }
+                
+                    if (data.id.endsWith('_fail')) {
+                
+                        const id =
+                            data.id.replace('_fail', '');
+                
+                        const icon =
+                            document.getElementById(
+                                `fail_${id}`
+                            );
+                
+                        if (icon)
+                            icon.classList.toggle(
+                                'hidden',
+                                !data.value
+                            );
+                    }
+                
+                    if (data.id.endsWith('_override')) {
+                
+                        const id =
+                            data.id.replace('_override', '');
+                
+                        const icon =
+                            document.getElementById(
+                                `lock_${id}`
+                            );
+                
+                        if (icon)
+                            icon.classList.toggle(
+                                'hidden',
+                                !data.value
+                            );
+                    }
+                
+                    if (!data.id.includes('ledAlive')) {
+                
+                        const log =
+                            document.getElementById(
+                                'logList'
+                            );
+                
+                        const now =
+                            new Date()
+                                .toLocaleTimeString();
+                
+                        const row =
+                            log.insertRow(0);
+                
+                        row.innerHTML =
+                            `<td>${now}</td>
+                             <td>${data.id}</td>
+                             <td>${data.svalue}</td>`;
+                
+                        if (log.rows.length > 128)
+                            log.deleteRow(128);
+                    }
+                }
+                
+                // =========================
+                // UTILITIES
+                // =========================
+                
+                function filterTable() {
+                
+                    const query =
+                        document
+                            .getElementById(
+                                'filterInput'
+                            )
+                            .value
+                            .toLowerCase();
+                
+                    document
+                        .querySelectorAll('#mainList tr')
+                        .forEach(tr => {
+                
+                        tr.style.display =
+                            tr.innerText
+                                .toLowerCase()
+                                .includes(query)
+                                    ? ''
+                                    : 'none';
+                    });
+                }
+                
+                function sortTable(n) {
+                
+                    const table =
+                        document.getElementById(
+                            "mainTable"
+                        );
+                
+                    let rows =
+                        Array.from(table.rows)
+                            .slice(1);
+                
+                    rows.sort((a, b) =>
+                
+                        a.cells[n].innerText.localeCompare(
+                            b.cells[n].innerText,
+                            undefined,
+                            {numeric: true}
+                        )
+                    );
+                
+                    rows.forEach(row =>
+                
+                        table.tBodies[0]
+                            .appendChild(row)
+                    );
+                }
+                
+                // =========================
+                // STARTUP
+                // =========================
+                
+                document.addEventListener(
+                    'DOMContentLoaded',
+                    () => {
+                
+                    document.getElementById(
+                        'mqttHost'
+                    ).value = mqttConfig.host;
+                
+                    document.getElementById(
+                        'mqttTopic'
+                    ).value = mqttConfig.masterTopic;
+                
+                    mqttConnect();
+                });
 </script>
 
 </body>
