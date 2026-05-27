@@ -147,13 +147,13 @@ public:
 private:
 	string version;
 	Timer reboot;
+	Timer otaConfirm;
 	Nvs nvs;
 	ThingSpeak ts;
 	ObjManager *objManager;
 	MqttClient *mqtt;
 	MyProtocol *protocol;
 	MyPersistence *persistance;
-	
 	Hal hal;
 	DataManager *dataManager;
 	esp_ota_handle_t ota_update_handle;
@@ -178,6 +178,7 @@ private:
 	esp_err_t otaStart();
 	esp_err_t otaProcess(const char *data, size_t len, int pct);
 	esp_err_t otaEnd();
+	void check_ota_state();
 
 
 };

@@ -41,13 +41,13 @@ public:
     string getKey();
     string getMqttUri();
     string getUid();
-    void setDeviceStatus(const string &status);
     using ButtonCallBack = std::function<void(void)>;
     void onBootButton(ButtonCallBack cb) {
         bootButtonCallBack = cb;
     }
 private:
     ButtonCallBack bootButtonCallBack;
+    void setDeviceStatus(const string &status);
 
     void loop();
     ObjManager &om;

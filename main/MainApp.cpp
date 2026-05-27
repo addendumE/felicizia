@@ -9,6 +9,7 @@ static const char * TAG="APP";
 
 MainApp::MainApp():
 	reboot("reb", 1000),
+	otaConfirm("ota",20000),
 	nvs("APP",NVS_READWRITE),
 	objManager(new ObjManager()),
 	mqtt(new MqttClient()),
@@ -31,6 +32,13 @@ void MainApp::start()
 			ESP_LOGI(TAG,"rebooting!!!");
 	#ifndef LINUX_PLATFORM
 			esp_restart();
+	#endif
+		});
+
+	otaConfirm.onExpired([&]()
+		{
+	#ifndef LINUX_PLATFORM
+			check_ota_state();
 	#endif
 		});
 
@@ -63,6 +71,7 @@ void MainApp::start()
 	}
 	ESP_LOGI(TAG,"starting WEB server");
 	Websocket::start(80);
+	otaConfirm.start();
 
 }
 
@@ -78,7 +87,6 @@ void MainApp::startMqtt()
 		mqtt->setOnMessageCallback([&](const std::string& topic, const char * payload, size_t datasize,size_t offset, size_t totLen)
 		{
 			ESP_LOGI(TAG,"OnMessageCallback topic %s %d %d %d",topic.c_str(),datasize,offset,totLen);
-
 			if (topic==dataManager->getUid()+"/Firmware")
 			{
 #ifdef LINUX_PLATFORM
@@ -92,6 +100,8 @@ void MainApp::startMqtt()
 				otaProcess(payload,datasize, 100*offset/totLen);
 				if ((offset + datasize) == totLen) {
 					otaEnd();
+					vTaskDelay(pdMS_TO_TICKS(1000));
+					esp_restart();
 				}
 #endif
 			}
@@ -179,15 +189,11 @@ esp_err_t MainApp::otaStart()
 esp_err_t MainApp::otaProcess(const char *data, size_t len, int pct)
 {
 	ESP_LOGI(TAG,"otaProcess %d bytes",len);
-	char tmp[64];
-	snprintf(tmp,sizeof(tmp),"UPG %d %%",pct);
-	dataManager->setDeviceStatus(std::string(tmp));
 	return esp_ota_write(ota_update_handle, (const void *)data, len);
 
 }
 esp_err_t MainApp::otaEnd()
 {
-	ESP_LOGI(TAG,"otaEnd");
 	 esp_err_t err = esp_ota_end(ota_update_handle);
 	 if (err != ESP_OK) {
 		 if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
@@ -201,6 +207,24 @@ esp_err_t MainApp::otaEnd()
 	     ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)!", esp_err_to_name(err));
 	     return ESP_FAIL;
 	 }
-
 	 return err;
+}
+
+void MainApp::check_ota_state(void)
+{
+    const esp_partition_t *running = esp_ota_get_running_partition();
+
+    esp_ota_img_states_t ota_state;
+
+    if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK) {
+        ESP_LOGI(TAG, "Firmware OTA status: %d",ota_state);
+        if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
+            ESP_LOGI(TAG, "Marking app valid");
+            esp_ota_mark_app_valid_cancel_rollback();
+        }
+		else
+		{
+			ESP_LOGI(TAG, "APP valid");
+		}
+    }
 }

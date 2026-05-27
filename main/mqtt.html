@@ -417,7 +417,7 @@
             console.log("MQTT Connected");
 
             updateMqttState("Connesso");
-
+            console.log("subscribe", getUplinkTopic());
             mqttClient.subscribe(
                 getUplinkTopic(),
                 (err) => {
@@ -452,10 +452,8 @@
             );
         });
 
-        mqttClient.on('message',
-            (topic, message) => {
+        mqttClient.on('message', (topic, message) => {
             message = new TextDecoder().decode(message);
-
             if (topic !== getUplinkTopic())
                 return;
 
