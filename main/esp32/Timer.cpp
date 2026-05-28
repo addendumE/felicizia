@@ -22,7 +22,7 @@ Timer::~Timer() {
 
 
 bool Timer::start(void) {
-	return xTimerStart(timerHnd,portMAX_DELAY) == pdPASS;
+	return xTimerReset(timerHnd, pdMS_TO_TICKS(100)) == pdPASS;
 }
 
 bool Timer::changePeriod(size_t delayms)

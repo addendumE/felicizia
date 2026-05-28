@@ -8,7 +8,7 @@ static const char * TAG="APP";
 
 
 MainApp::MainApp():
-	reboot("reb", 1000),
+	reboot("reb", 5000),
 	otaConfirm("ota",20000),
 	nvs("APP",NVS_READWRITE),
 	objManager(new ObjManager()),
@@ -23,7 +23,6 @@ MainApp::~MainApp()
 {
 
 }
-
 
 void MainApp::start()
 {
@@ -95,13 +94,14 @@ void MainApp::startMqtt()
 				otaEnd();
 #else
 				if (offset == 0) {
+					dataManager->stop();
 					otaStart();
 				}	
 				otaProcess(payload,datasize, 100*offset/totLen);
 				if ((offset + datasize) == totLen) {
 					otaEnd();
-					vTaskDelay(pdMS_TO_TICKS(1000));
-					esp_restart();
+					dataManager->setDeviceStatus("REBOOT");
+					reboot.start();
 				}
 #endif
 			}
@@ -110,6 +110,7 @@ void MainApp::startMqtt()
 				string _payload(payload,payload+datasize);
 				string resp = protocol->onMessage(_payload);
 				mqtt->publish(dataManager->getUid()+"/Uplink",resp);
+				dataManager->setDeviceStatus("OK");
 			}
 		});
 	mqtt->setOnConnectCallback([&]()
@@ -188,7 +189,6 @@ esp_err_t MainApp::otaStart()
 }
 esp_err_t MainApp::otaProcess(const char *data, size_t len, int pct)
 {
-	ESP_LOGI(TAG,"otaProcess %d bytes",len);
 	return esp_ota_write(ota_update_handle, (const void *)data, len);
 
 }
@@ -207,6 +207,8 @@ esp_err_t MainApp::otaEnd()
 	     ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)!", esp_err_to_name(err));
 	     return ESP_FAIL;
 	 }
+	 ESP_LOGI(TAG, "New boot partition set successfully");
+
 	 return err;
 }
 

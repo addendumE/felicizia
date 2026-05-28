@@ -45,9 +45,11 @@ public:
     void onBootButton(ButtonCallBack cb) {
         bootButtonCallBack = cb;
     }
+
+    void setDeviceStatus(const string &status);
+
 private:
     ButtonCallBack bootButtonCallBack;
-    void setDeviceStatus(const string &status);
 
     void loop();
     ObjManager &om;

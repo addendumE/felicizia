@@ -35,7 +35,22 @@ bool Thread::start()
 	return ret;
 }
 
+void Thread::stop()
+{
+	if (handle != NULL)
+	{
+		vTaskDelete(handle);
+		handle = NULL;
+	}
+}
+
+void Thread::cancel()
+{
+	stop();
+}
+
 Thread::~Thread() {
+	stop();
 }
 
 void Thread::taskHandle( void * pvParameters )

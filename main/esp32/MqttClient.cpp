@@ -47,10 +47,18 @@ bool MqttClient::stop() {
     return true;
 }
 
-bool MqttClient::publish(const std::string& topic, const std::string& payload, int qos, int retain) {
+bool MqttClient::publish(const std::string& topic, const std::string& payload, int qos, int retain, int sync) {
     if (!client) return false;
     if (!connected) return false;
-    int msg_id = esp_mqtt_client_enqueue(client, topic.c_str(), payload.c_str(), payload.length(), qos, retain,true);
+    int msg_id;
+    if (sync)
+    {
+        msg_id = esp_mqtt_client_publish(client, topic.c_str(), payload.c_str(),payload.length(),qos,retain);
+    }
+    else {
+        msg_id = esp_mqtt_client_enqueue(client, topic.c_str(), payload.c_str(), payload.length(), qos, retain,true);
+    }
+     
     ESP_LOGI(TAG,"publish %s %s -> %d",topic.c_str(),payload.c_str(),msg_id);
 
     return msg_id != -1;

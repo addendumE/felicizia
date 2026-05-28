@@ -18,7 +18,7 @@ public:
 
     bool start(const std::string& uri);
     bool stop();
-    bool publish(const std::string& topic, const std::string& payload, int qos = 0, int retain = 0);
+    bool publish(const std::string& topic, const std::string& payload, int qos = 0, int retain = 0, int sync = 0);
     bool subscribe(const std::string& topic, int qos = 0);
     bool unsubscribe(const std::string& topic);
 

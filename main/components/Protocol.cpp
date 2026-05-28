@@ -27,8 +27,10 @@ string Protocol::commitPropChange()
 	cJSON_AddItemToObject(jResp, "data", jPropChangeArray);
 	cJSON_AddStringToObject(jResp, "cmd", "propChange");
 	char *txt = cJSON_PrintUnformatted(jResp);
-	msg = txt;
-	free(txt);
+	if (txt) {
+		msg = txt;
+		free(txt);
+	}
 	cJSON_Delete(jResp);
 	jPropChangeArray = nullptr;
 	lck.give();
@@ -145,8 +147,11 @@ string Protocol::onMessage(const string &msg)
 	cJSON_Delete(jReq);
 	char *txt = cJSON_PrintUnformatted(jResp);
 	cJSON_Delete(jResp);
-	string result = txt;
-	free(txt);
+	string result;
+	if (txt) {
+		result = txt;
+		free(txt);
+	}
 	return result;
 }
 
@@ -242,4 +247,3 @@ Protocol::handleResult Protocol::handleConfWrite(cJSON *jReq,cJSON **jResp)
 	return ret;
 }
 	
-

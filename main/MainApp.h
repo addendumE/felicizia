@@ -30,11 +30,13 @@ public:
 		ts(ts),
 		mqtt(mqtt),
 		websocket(websocket),
+		timerPending(false),
 		propChangeTimer("TIM",100)
 {
 
 		propChangeTimer.onExpired([&]()
 		{
+			timerPending = false;
 			string msg =protocol.commitPropChange();
 			if (!msg.empty())
 			{
@@ -52,7 +54,10 @@ public:
 	void changeNotify(string objId, PropertyId p)
 	{
 		protocol.propChangeNotification(objId,p);
-		propChangeTimer.start();
+		if (!timerPending) {
+			timerPending = true;
+			propChangeTimer.start();
+		}
 		//string msg =protocol.commitPropChange();
 		//mqtt.publish(pubtopic,msg);
 		//websocket.send(msg);
@@ -125,6 +130,7 @@ private:
 	MqttClient &mqtt;
 	Websocket &websocket;
 	std::string pubtopic;
+	bool timerPending;
 	Timer propChangeTimer;
 
 };
