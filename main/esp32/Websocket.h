@@ -23,10 +23,6 @@
 #include "esp_netif.h"
 #include <esp_http_server.h>
 #include "lwip/apps/fs.h"
-#include "esp_ota_ops.h"
-#include "esp_flash_partitions.h"
-#include "esp_partition.h"
-#include "esp_image_format.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
@@ -42,6 +38,7 @@ public:
 	virtual void onMessage(const string&) = 0;
 	virtual void onOTAenter() = 0;
 	virtual void onOTAexit() = 0;
+	virtual void onOTAdata(const char *data, size_t len) = 0;
 	virtual void onConfigRead(string &s) = 0;
 	virtual bool onConfigWrite(string&s) = 0;
 	void send(const string&);
@@ -51,10 +48,7 @@ private:
     	int client_fd;
     	httpd_ws_frame_t frm;
 	};
-
 	set <int> clients;
-
-
 	static esp_err_t callback_http(httpd_req_t *req);
 	static esp_err_t callback_http_upload(httpd_req_t *req);
 	static esp_err_t callback_http_readConf(httpd_req_t *req);
@@ -64,15 +58,12 @@ private:
 
 	bool ws_enqueue_fragmented_text(const std::string& msg);
 
-	esp_err_t start_ota();
 	httpd_handle_t server;
 	httpd_uri_t ws_uri;
 	httpd_uri_t index_uri;
 	httpd_uri_t ota_uri;
 	httpd_uri_t readConf_uri;
 	httpd_uri_t writeConf_uri;
-	esp_ota_handle_t update_handle;
-	const esp_partition_t *update_partition;
 };
 
 #endif /* MAIN_WEBSOCKET_H_ */
