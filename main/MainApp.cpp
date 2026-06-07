@@ -97,7 +97,7 @@ void MainApp::startMqtt()
 					dataManager->stop();
 					otaStart();
 				}	
-				otaProcess(payload,datasize, 100*offset/totLen);
+				otaProcess(payload,datasize);
 				if ((offset + datasize) == totLen) {
 					otaEnd();
 					dataManager->setDeviceStatus("REBOOT");
@@ -193,7 +193,7 @@ esp_err_t MainApp::otaStart()
     ESP_LOGI(TAG, "esp_ota_begin succeeded");
     return ESP_OK;	
 }
-esp_err_t MainApp::otaProcess(const char *data, size_t len, int pct)
+esp_err_t MainApp::otaProcess(const char *data, size_t len)
 {
 	return esp_ota_write(ota_update_handle, (const void *)data, len);
 

@@ -239,48 +239,17 @@ esp_err_t Websocket::callback_http(httpd_req_t *req)
 #define TMP_SIZE 8192
 esp_err_t Websocket::callback_http_upload(httpd_req_t *req)
 {
-	 Websocket &me = *(Websocket*) req->user_ctx;
-	 int total_len = req->content_len;
-	 /*if (total_len >= SCRATCH_BUFSIZE) {
-	    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
-	    return ESP_FAIL;
-	 }*/
-	 me.start_ota();
-	 char *tmp = (char*)malloc(TMP_SIZE);
-	 if (tmp == NULL)
-	 {
-			  ESP_LOGE(TAG,"mem allocation fail");
-	 }
-	 while (total_len > 0)
-	 {
-		 int received = httpd_req_recv(req, tmp, (total_len > TMP_SIZE) ? TMP_SIZE:total_len);
-		 esp_err_t err = esp_ota_write(me.update_handle, (const void *)tmp, received);
-		 if (err != ESP_OK)
-		  {
-			  ESP_LOGE(TAG,"esp_ota_write %d",err);
-			  httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "esp_ota_write");
-			  return ESP_FAIL;
-		  }
-		  total_len -= received;
-	 }
-	 free (tmp);
-
-	 esp_err_t err = esp_ota_end(me.update_handle);
-	 if (err != ESP_OK) {
-		 if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
-			 ESP_LOGE(TAG, "Image validation failed, image is corrupted");
-	     }
-	     ESP_LOGE(TAG, "esp_ota_end failed (%s)!", esp_err_to_name(err));
-		  httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "esp_ota_end");
-	     return ESP_FAIL;
-	 }
-	 err = esp_ota_set_boot_partition(me.update_partition);
-	 if (err != ESP_OK) {
-	     ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)!", esp_err_to_name(err));
-		  httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "esp_ota_set_boot_partition");
-	     return ESP_FAIL;
-	 }
-    httpd_resp_sendstr(req, "Fw upgrade success");
+	Websocket &me = *(Websocket*) req->user_ctx;
+	int total_len = req->content_len;
+	char *tmp = (char*)malloc(TMP_SIZE);
+    me.onOTAenter();
+    while (total_len > 0)
+	{
+		int received = httpd_req_recv(req, tmp, (total_len > TMP_SIZE) ? TMP_SIZE:total_len);
+		me.onOTAdata(tmp,received);
+		total_len -= received;
+	}
+	free (tmp);
     me.onOTAexit();
     return ESP_OK;
 }
@@ -317,42 +286,5 @@ esp_err_t Websocket::callback_http_writeConf(httpd_req_t *req)
     }
 	me.onConfigWrite(body);
     httpd_resp_sendstr(req, "conf written");
-    return ESP_OK;
-}
-
-
-esp_err_t Websocket::start_ota(void)
-{
-    esp_err_t err;
-    ESP_LOGI(TAG, "Starting OTA");
-    onOTAenter();
-    const esp_partition_t *configured = esp_ota_get_boot_partition();
-    const esp_partition_t *running = esp_ota_get_running_partition();
-    if(configured==NULL || running == NULL)
-    {
-        ESP_LOGE(TAG,"OTA data not found");
-        return ESP_FAIL;
-    }
-
-    if (configured != running)
-    {
-        ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08lx, but running from offset 0x%08lx",
-                 configured->address, running->address);
-        ESP_LOGW(TAG, "(This can happen if either the OTA boot data or preferred boot image become corrupted somehow.)");
-    }
-    ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08lx)",
-             running->type, running->subtype, running->address);
-
-    update_partition = esp_ota_get_next_update_partition(NULL);
-    ESP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%lx",
-             update_partition->subtype, update_partition->address);
-
-    err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &update_handle);
-    if (err != ESP_OK)
-    {
-        ESP_LOGE(TAG, "esp_ota_begin failed ");
-        return ESP_FAIL;
-    }
-    ESP_LOGI(TAG, "esp_ota_begin succeeded");
     return ESP_OK;
 }

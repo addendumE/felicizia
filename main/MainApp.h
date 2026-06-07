@@ -168,11 +168,16 @@ private:
 	void onMode(WifiManager::Mode mode);
 	void startMqtt();
 	void onMessage(const string&);
-	void onOTAenter(){};
+	void onOTAenter(){otaStart();};
 	void onOTAexit(){
-		vTaskDelay(pdMS_TO_TICKS(1000));
-		esp_restart();
+		otaEnd();
+		dataManager->setDeviceStatus("REBOOT");
+		reboot.start();
 	};
+	void onOTAdata(const char *data, size_t len)
+	{
+		otaProcess(data,len);
+	}
 	void onConfigRead(string &s)
 	{
 		objManager->getConf(s);
@@ -182,9 +187,7 @@ private:
 	}
 
 	esp_err_t otaStart();
-	esp_err_t otaProcess(const char *data, size_t len, int pct);
+	esp_err_t otaProcess(const char *data, size_t len);
 	esp_err_t otaEnd();
 	void check_ota_state();
-
-
 };
