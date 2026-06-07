@@ -13,4 +13,4 @@ INCLUDE_DIRS "." esp32 components components/objects
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-maybe-uninitialized)
-target_compile_definitions(${COMPONENT_LIB} PRIVATE BUILD_VERSION=\"VER_2_0\")
+target_compile_definitions(${COMPONENT_LIB} PRIVATE BUILD_VERSION=\"VER_2_1\")

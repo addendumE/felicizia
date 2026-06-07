@@ -437,13 +437,13 @@
 
                     router();
 
-                    pingInterval = setInterval(() => {
+                    /*pingInterval = setInterval(() => {
 
                         sendRequest(
-                            "ping"
+                        "getObjectList"
                         );
 
-                    }, 5000);
+                    }, 10000);*/
 
                     sendRequest(
                         "getObjectList"
@@ -456,12 +456,12 @@
             message = new TextDecoder().decode(message);
             if (topic !== getUplinkTopic())
                 return;
-
+            
             try {
 
                 const obj =
                     JSON.parse(message.toString());
-
+                if (obj.cmd!="propChange") console.log(message)
                 handleMessage(obj);
 
             } catch (e) {
@@ -516,6 +516,7 @@
             getDownlinkTopic(),
             JSON.stringify(payload)
         );
+        console.log(payload)
     }
 
     function updateMqttState(text) {
@@ -942,8 +943,8 @@
                              <td>${data.id}</td>
                              <td>${data.svalue}</td>`;
                 
-                        if (log.rows.length > 128)
-                            log.deleteRow(128);
+                        if (log.rows.length > 64)
+                            log.deleteRow(64);
                     }
                 }
                 

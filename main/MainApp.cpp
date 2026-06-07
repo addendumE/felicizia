@@ -105,12 +105,18 @@ void MainApp::startMqtt()
 				}
 #endif
 			}
-			else if (topic==dataManager->getUid()+"/Downlink")
+			else if (topic == dataManager->getUid() + "/Downlink")
 			{
-				string _payload(payload,payload+datasize);
-				string resp = protocol->onMessage(_payload);
-				mqtt->publish(dataManager->getUid()+"/Uplink",resp);
-				dataManager->setDeviceStatus("OK");
+				static std::string downlinkBuffer;
+				if (offset == 0) downlinkBuffer.clear();
+				downlinkBuffer.append(payload, datasize);
+
+				if (offset + datasize == totLen) {
+					string resp = protocol->onMessage(downlinkBuffer);
+					mqtt->publish(dataManager->getUid() + "/Uplink", resp);
+					dataManager->setDeviceStatus("OK");
+					downlinkBuffer.clear();
+				}
 			}
 		});
 	mqtt->setOnConnectCallback([&]()
