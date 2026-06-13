@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <esp_log.h>
 static const char *TAG="DM";
-#define IICdebug
+//#define IICdebug
 
 #define POMPA_SERBATOIO_GPIO    GPIO_NUM_8
 #define POMPA_FOSSO_GPIO        GPIO_NUM_5
@@ -289,12 +289,20 @@ void DataManager::doOutput()
 
 }
 
-bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi, float start, float end) {
+bool DataManager::pompa_on(int irrigazioni_al_giorno,
+                           int durata_secondi,
+                           float start,
+                           float end)
+{
     if (irrigazioni_al_giorno <= 0 || durata_secondi <= 0)
+    {
+        ESP_LOGW(TAG, "Configurazione errata %d %d",
+                 irrigazioni_al_giorno, durata_secondi);
         return false;
+    }
 
-    // Ottieni l'orario corrente
-    time_t now = time(NULL);
+    // Orario corrente
+    time_t now = time(nullptr);
     struct tm *t = localtime(&now);
 
     int secondi_da_mezzanotte =
@@ -302,54 +310,44 @@ bool DataManager::pompa_on(int irrigazioni_al_giorno, int durata_secondi, float 
         t->tm_min * 60 +
         t->tm_sec;
 
-    // Converte start/end da ore a secondi
-    int start_sec = (int)(start * 3600.0f);
-    int end_sec   = (int)(end * 3600.0f);
+    // Conversione ore -> secondi
+    int start_sec = static_cast<int>(start * 3600.0f);
+    int end_sec   = static_cast<int>(end * 3600.0f);
 
-    // Calcola durata finestra (gestendo mezzanotte)
-    int durata_finestra;
-    if (start_sec <= end_sec) {
-        durata_finestra = end_sec - start_sec;
-    } else {
-        durata_finestra = (24 * 3600 - start_sec) + end_sec;
-    }
-
-    if (durata_finestra <= 0)
+    // La finestra deve essere valida e non attraversare la mezzanotte
+    if (start_sec >= end_sec)
+    {
+        ESP_LOGW(TAG, "Finestra oraria non valida");
         return false;
-
-    // Verifica se siamo dentro la finestra
-    int tempo_relativo;
-    if (start_sec <= end_sec) {
-        if (secondi_da_mezzanotte < start_sec || secondi_da_mezzanotte >= end_sec)
-            return false;
-        tempo_relativo = secondi_da_mezzanotte - start_sec;
-    } else {
-        // attraversa mezzanotte
-        if (secondi_da_mezzanotte >= start_sec) {
-            tempo_relativo = secondi_da_mezzanotte - start_sec;
-        } else if (secondi_da_mezzanotte < end_sec) {
-            tempo_relativo = (24 * 3600 - start_sec) + secondi_da_mezzanotte;
-        } else {
-            return false;
-        }
     }
 
-    // Intervallo tra irrigazioni dentro la finestra
+    // Fuori dalla finestra di irrigazione
+    if (secondi_da_mezzanotte < start_sec ||
+        secondi_da_mezzanotte >= end_sec)
+    {
+        ESP_LOGI(TAG, "POMPA OFF - fuori finestra");
+        return false;
+    }
+
+    int durata_finestra = end_sec - start_sec;
     int intervallo = durata_finestra / irrigazioni_al_giorno;
 
-    // Controlla slot
-    for (int i = 0; i < irrigazioni_al_giorno; i++) {
-        int inizio = i * intervallo;
-        int fine   = inizio + durata_secondi;
-
-        if (tempo_relativo >= inizio && tempo_relativo < fine) {
-            return true;
-        }
+    // Evita divisioni per zero
+    if (intervallo <= 0)
+    {
+        ESP_LOGW(TAG, "Intervallo non valido");
+        return false;
     }
 
-    return false;
-}
+    int tempo_relativo = secondi_da_mezzanotte - start_sec;
+    int offset_nello_slot = tempo_relativo % intervallo;
 
+    bool on = (offset_nello_slot < durata_secondi);
+
+    ESP_LOGI(TAG, "POMPA %s, %d %d", on ? "ON" : "OFF", offset_nello_slot, durata_secondi);
+
+    return on;
+}
 void DataManager::loop()
 {
     while (true)
@@ -385,12 +383,20 @@ void DataManager::loop()
             !cmdPompaIrrigazione.getValue()
         );
 
+        ESP_LOGI(TAG,"TA:%d VB:%d LIV:%d OR:%d",
+        temperaturaAriaOk.getValue(),
+        tensioneBatteriaOk.getValue(),
+        livSvuotamentoCanaleOk.getValue(),
+        orarioOk.getValue()
+        );
         float start,end;
-        orarioOk.getThValue(start,end);
+        orarioOk.getThValue(end,start);
         cmdPompaIrrigazione.setValue(
             temperaturaAriaOk.getValue() &&
             tensioneBatteriaOk.getValue() &&
             livIrrigazioneOk.getValue() &&
+            orarioOk.getValue() &&
+
             pompa_on(
                 (int)numeroIrrigazioni.getValue(),
                 (int)tempoIrrigazione.getValue()*60,
