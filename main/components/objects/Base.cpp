@@ -421,7 +421,7 @@ Property::SetResult Base::setPropertyValueInt(PropertyId pid, int val)
 	Property::SetResult ret = Property::SET_OK;
 	if (propertyList.count(pid) > 0)
 	{
-		if (propertyList[pid]->getType()!=VALUE_TYPE_INTEGER) return Property::SET_WRONG_TYPE;
+		if (propertyList[pid]->getType()!=VALUE_TYPE_INTEGER && propertyList[pid]->getType()!=VALUE_TYPE_ENUM) return Property::SET_WRONG_TYPE;
 		IntProperty * p = static_cast<IntProperty*>(propertyList[pid]);
 		int old = p->get();
 		ret = p->set(val);

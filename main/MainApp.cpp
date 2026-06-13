@@ -113,7 +113,7 @@ void MainApp::startMqtt()
 
 				if (offset + datasize == totLen) {
 					string resp = protocol->onMessage(downlinkBuffer);
-					mqtt->publish(dataManager->getUid() + "/Uplink", resp);
+					mqtt->publish(dataManager->getUid() + "/Uplink", resp,0,false,true);
 					dataManager->setDeviceStatus("OK");
 					downlinkBuffer.clear();
 				}

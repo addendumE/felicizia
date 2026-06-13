@@ -19,8 +19,7 @@ bool MqttClient::start(const std::string& uri) {
     esp_mqtt_client_config_t mqtt_cfg = {};
     // Nelle versioni di ESP-IDF 5.x, la configurazione si trova sotto 'broker'
     mqtt_cfg.broker.address.uri = uri.c_str();
-    mqtt_cfg.broker.verification.crt_bundle_attach = esp_crt_bundle_attach,
-
+    mqtt_cfg.broker.verification.crt_bundle_attach = esp_crt_bundle_attach;
     client = esp_mqtt_client_init(&mqtt_cfg);
     if (!client) {
         ESP_LOGE(TAG, "Errore durante l'inizializzazione del client MQTT.");
@@ -59,7 +58,7 @@ bool MqttClient::publish(const std::string& topic, const std::string& payload, i
         msg_id = esp_mqtt_client_enqueue(client, topic.c_str(), payload.c_str(), payload.length(), qos, retain,true);
     }
      
-    ESP_LOGI(TAG,"publish %s %s -> %d",topic.c_str(),payload.c_str(),msg_id);
+   // ESP_LOGI(TAG,"publish %s %s -> %d",topic.c_str(),payload.c_str(),msg_id);
 
     return msg_id != -1;
 }

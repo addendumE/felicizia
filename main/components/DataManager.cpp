@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <esp_log.h>
 static const char *TAG="DM";
-//#define IICdebug
+#define IICdebug
 
 #define POMPA_SERBATOIO_GPIO    GPIO_NUM_8
 #define POMPA_FOSSO_GPIO        GPIO_NUM_5

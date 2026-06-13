@@ -100,8 +100,9 @@ bool Threshold::setValue(float measure)
 			value = (measure<= thl || measure >=thh);
 			setPropertyValueBool(PROP_VALUE,value);
 		}
+		ESP_LOGI(TAG,"MODE :%d %f %f %f %d",mode,thl,thh,measure,value);
 	}
-
+	
 	setPropertyValueFloat(PROP_TH_LAST_VALUE,measure);
 	return value;
 }

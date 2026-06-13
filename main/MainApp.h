@@ -31,7 +31,7 @@ public:
 		mqtt(mqtt),
 		websocket(websocket),
 		timerPending(false),
-		propChangeTimer("TIM",100)
+		propChangeTimer("TIM",250)
 {
 
 		propChangeTimer.onExpired([&]()
@@ -40,7 +40,7 @@ public:
 			string msg =protocol.commitPropChange();
 			if (!msg.empty())
 			{
-				mqtt.publish(pubtopic,msg);
+				mqtt.publish(pubtopic,msg,0,false,true);
 				//ESP_LOGI("PER","mqtt msg %s %s",pubtopic.c_str(),msg.c_str());
 				websocket.send(msg);	
 			}
