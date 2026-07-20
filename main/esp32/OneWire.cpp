@@ -76,13 +76,13 @@ void OneWire::loop(void)
 			esp_err_t ret = ds18b20_trigger_temperature_conversion(ds18b20s[i]);
 			if (ret == ESP_OK)
 			{
-				float res = -100.0;
+				float res = -100.0f;
 				ret = ds18b20_get_temperature(ds18b20s[i], &res);
-				if (ret == ESP_OK)
+				if (ret == ESP_OK && res != -100.0f)
 				{
 					ESP_LOGI(TAG, "temperature read from DS18B20[%d]: %f °C", i, res);
 					Lock::take();
-					temperatures[i] = temperatures[i]*0.9 + 0.1*res;
+					temperatures[i] = res;
 					good[i]=true;
 					Lock::give();
 				}
