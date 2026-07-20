@@ -70,38 +70,33 @@ void OneWire::loop(void)
 {
 	while(ds18b20_device_num > 0)
 	{
-
+		esp_err_t ret = ds18b20_trigger_temperature_conversion_for_all(bus);
+		Lock::take();
 		for (int i=0; i<ds18b20_device_num; i++)
 		{
-			esp_err_t ret = ds18b20_trigger_temperature_conversion(ds18b20s[i]);
+			good[i]=false;
 			if (ret == ESP_OK)
 			{
 				float res = -100.0f;
 				ret = ds18b20_get_temperature(ds18b20s[i], &res);
-				if (ret == ESP_OK && res != -100.0f)
+				if (ret == ESP_OK && res >= -20.0f)
 				{
 					ESP_LOGI(TAG, "temperature read from DS18B20[%d]: %f °C", i, res);
-					Lock::take();
 					temperatures[i] = res;
 					good[i]=true;
-					Lock::give();
 				}
 				else
 				{
 					ESP_LOGE(TAG, "ds18b20_get_temperature %d",ret);
-					Lock::take();
-					good[i]=false;
-					Lock::give();
 				}
 			}
 			else
 			{
 				ESP_LOGE(TAG, "ds18b20_trigger_temperature_conversion %d",ret);
-				Lock::take();
-				good[i]=false;
-				Lock::give();
 			}
-			vTaskDelay(pdMS_TO_TICKS(500));
 		}
+		Lock::give();
+		vTaskDelay(pdMS_TO_TICKS(500));
+
 	}
 }

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Felicizia - Sinottico MQTT</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card: #16213e;
+            --primary: #0f3460;
+            --accent: #e94560;
+            --water: #00d2ff;
+            --success: #4caf50;
+            --danger: #f44336;
+            --text: #e0e0e0;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        h1 { text-align: center; color: var(--water); margin-bottom: 30px; }
+
+        /* Pannello Configurazione nell'Header */
+        .config-bar {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--primary);
+        }
+        input { background: #0f3460; border: 1px solid #555; color: white; padding: 8px; border-radius: 4px; }
+        button { background: var(--accent); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+
+        .synoptic-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 50px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .flow-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            justify-content: space-around;
+            background: var(--card);
+            padding: 40px;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        /* Componenti Grafici */
+        .tank-unit { display: flex; flex-direction: column; align-items: center; width: 120px; }
+        .tank {
+            width: 80px;
+            height: 120px;
+            border: 3px solid #555;
+            border-radius: 0 0 10px 10px;
+            background: #222;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        .water { background: var(--water); width: 100%; transition: height 1s ease-in-out; box-shadow: 0 0 10px var(--water); }
+        .label { margin-top: 10px; font-weight: bold; text-align: center; font-size: 0.9em; }
+        .val { color: var(--water); font-size: 1.1em; }
+
+        .pump-unit { display: flex; flex-direction: column; align-items: center; }
+        .pump-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #333;
+            border: 4px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .active { background: var(--success) !important; box-shadow: 0 0 20px var(--success); color: white; }
+        .error { border-color: var(--danger) !important; color: var(--danger); }
+
+        .pipe { height: 8px; background: #333; flex-grow: 1; margin: 0 10px; position: relative; }
+        .pipe-flow::after {
+            content: ""; position: absolute; top: 0; left: 0; height: 100%; width: 30px;
+            background: var(--water); animation: flowAnim 1.5s linear infinite;
+        }
+        @keyframes flowAnim { from { left: -10%; } to { left: 110%; } }
+
+        /* Footer Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            width: 100%;
+        }
+        .stat-card {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border-bottom: 3px solid var(--primary);
+        }
+        .stat-val { display: block; font-size: 1.4em; font-weight: bold; color: var(--accent); }
+
+        /* Pannello LED */
+        .led-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            width: 100%;
+            background: var(--card);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .led-item { display: flex; align-items: center; gap: 12px; font-weight: bold; font-size: 0.85em; }
+        .led-dot { width: 14px; height: 14px; border-radius: 50%; background: #333; transition: 0.3s; border: 1px solid #555; }
+        .led-on.led-alive { background: #00ff00; box-shadow: 0 0 10px #00ff00; }
+        .led-on.led-warning { background: #ffcc00; box-shadow: 0 0 10px #ffcc00; }
+        .led-on.led-error { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
+        .last-update { text-align: center; font-size: 0.8em; color: #888; margin: -20px 0 20px 0; }
+    </style>
+</head>
+<body>
+
+    <h1>Felicizia Smart Irrigation</h1>
+
+    <div class="config-bar">
+        <input type="text" id="mqttHost" placeholder="ws://broker-ip:9001" value="wss://felicizia:Felicizia2026@dffe5427b5874829834622fed7d79418.s1.eu.hivemq.cloud:8884/mqtt">
+        <input type="text" id="mqttTopic" placeholder="Topic (es: felicizia)" value="FB0D6B4DD7A90FBF">
+        <button onclick="connect()">Connetti</button>
+        <span id="status">🔴 Disconnesso</span>
+    </div>
+
+    <div id="updateTime" class="last-update">Ultimo aggiornamento: --:--:--</div>
+
+    <div class="synoptic-view">
+        <div class="flow-container">
+            <!-- Fosso -->
+            <div class="tank-unit">
+                <div class="tank"><div id="fill_livFosso" class="water" style="height: 0%"></div></div>
+                <div class="label">FOSSO<br><span id="val_livFosso" class="val">--</span></div>
+            </div>
+
+            <div id="flow1" class="pipe"></div>
+
+            <!-- Pompa Riempimento -->
+            <div class="pump-unit">
+                <div id="pump_cmdPriemp" class="pump-circle">P1</div>
+                <div class="label">Riempimento</div>
+            </div>
+
+            <div id="flow2" class="pipe"></div>
+
+            <!-- Serbatoio -->
+            <div class="tank-unit">
+                <div class="tank"><div id="fill_livSerbatoio" class="water" style="height: 0%"></div></div>
+                <div class="label">SERBATOIO<br><span id="val_livSerbatoio" class="val">--</span></div>
+            </div>
+
+            <div id="flow3" class="pipe"></div>
+
+            <!-- Pompa Irrigazione -->
+            <div class="pump-unit">
+                <div id="pump_cmdPirrig" class="pump-circle">P2</div>
+                <div class="label">Irrigazione</div>
+            </div>
+        </div>
+
+        <!-- Pannello LED di Stato -->
+        <div class="led-grid">
+            <div class="led-item"><div id="led_ledAlive" class="led-dot led-alive"></div> SISTEMA ATTIVO</div>
+            <div class="led-item"><div id="led_ledLowBatt" class="led-dot led-warning"></div> BATTERIA BASSA</div>
+            <div class="led-item"><div id="led_ledLowFosso" class="led-dot led-warning"></div> FOSSO VUOTO</div>
+            <div class="led-item"><div id="led_ledLowSerb" class="led-dot led-warning"></div> SERBATOIO VUOTO</div>
+            <div class="led-item"><div id="led_ledLowTaria" class="led-dot led-warning"></div> TEMP. ARIA BASSA</div>
+            <div class="led-item"><div id="led_ledTorb" class="led-dot led-warning"></div> TORBIDITÀ ANOMALA</div>
+            <div class="led-item"><div id="led_ledErrPfosso" class="led-dot led-error"></div> ERR. POMPA FOSSO</div>
+            <div class="led-item"><div id="led_ledErrPserb" class="led-dot led-error"></div> ERR. POMPA SERBATOIO</div>
+        </div>
+
+        <!-- Sensori Secondari -->
+        <div class="stats-grid">
+            <div class="stat-card"><span>Batteria</span><span id="val_vbatt" class="stat-val">--</span></div>
+            <div class="stat-card"><span>Temp. Aria</span><span id="val_tempAria" class="stat-val">--</span></div>
+            <div class="stat-card"><span>Temp. Acqua</span><span id="val_tempAcqua" class="stat-val">--</span></div>
+            <div class="stat-card"><span>Conducibilità</span><span id="val_sccm" class="stat-val">--</span></div>
+        </div>
+    </div>
+
+    <script>
+        let client = null;
+
+        function connect() {
+            const host = document.getElementById('mqttHost').value;
+            const topic = document.getElementById('mqttTopic').value;
+            
+            // Salvataggio immediato al click del tasto connetti
+            localStorage.setItem('syn_mqtt_host', host);
+            localStorage.setItem('syn_mqtt_topic', topic);
+
+            if (client) client.end();
+
+            updateStatus("🟡 Connessione...");
+            
+            // Generazione clientId univoco per evitare collisioni sul broker
+            const clientId = 'synoptic_' + Math.random().toString(16).substring(2, 8);
+            client = mqtt.connect(host, { clientId });
+
+            client.on('connect', () => {
+                updateStatus("🟢 Connesso");
+                client.subscribe(`${topic}/Uplink`);
+                client.publish(`${topic}/Downlink`, JSON.stringify({id: "sync", cmd: "getObjectList"}));
+            });
+
+            client.on('message', (t, message) => {
+                try {
+                    const msg = JSON.parse(message.toString());
+                    if (msg.cmd === "getObjectList" || msg.cmd === "propChange") {
+                        if (msg.data) msg.data.forEach(updateUI);
+                    }
+                    document.getElementById('updateTime').innerText = "Ultimo aggiornamento: " + new Date().toLocaleTimeString();
+                } catch(e) { console.error("Errore parsing MQTT", e); }
+            });
+
+            client.on('error', () => updateStatus("🔴 Errore"));
+            client.on('close', () => updateStatus("🔴 Chiuso"));
+        }
+
+        function updateStatus(text) {
+            document.getElementById('status').innerText = text;
+        }
+
+        function updateUI(item) {
+            const isFullObject = !item.id.includes('_');
+            const baseId = item.id.replace('_value', '').replace('_fail', '').replace('_override', '');
+            
+            const valEl = document.getElementById(`val_${baseId}`);
+            const pumpEl = document.getElementById(`pump_${baseId}`);
+            const fillEl = document.getElementById(`fill_${baseId}`);
+            const ledEl = document.getElementById(`led_${baseId}`);
+
+            // 1. Aggiornamento testo valore (solo se è un cambiamento di valore)
+            if (item.id.endsWith('_value') || isFullObject) {
+                if (valEl) valEl.innerText = item.svalue;
+            }
+
+            // 2. Logica Serbatoi (Livelli)
+            if (baseId === 'livFosso') {
+                if (fillEl && (item.id.endsWith('_value') || isFullObject)) {
+                    // Scale specifiche: Fosso 0.5m, Serbatoio 1.0m
+                    const rawVal = parseFloat(item.value);
+                    const maxLvl = (baseId === 'livFosso') ? 0.5 : 1.0;
+                    const percent = Math.min(100, Math.max(0, (rawVal / maxLvl) * 100));
+                    fillEl.style.height = percent + "%";
+                }
+            }
+            if (baseId === 'livSerbatoio') {
+                if (fillEl && (item.id.endsWith('_value') || isFullObject)) {
+                    // Scale specifiche: Fosso 0.5m, Serbatoio 1.0m
+                    const rawVal = parseFloat(item.value);
+                    const maxLvl = (baseId === 'livFosso') ? 0.5 : 1.0;
+                    const percent = Math.min(100, Math.max(0, (rawVal / maxLvl) * 100));
+                    fillEl.style.height = percent + "%";
+                }
+            }
+
+            // 3. Logica Pompe e Animazione Tubi
+            if (baseId === 'cmdPriemp' || baseId === 'cmdPirrig') {
+                const isActive = (item.id.endsWith('_value') || isFullObject) ? 
+                                 (item.value === true || item.value === "true" || item.value === 1) : 
+                                 null;
+                
+                if (pumpEl && isActive !== null) {
+                    pumpEl.classList.toggle('active', isActive);
+                    
+                    // Gestione tubi
+                    if (baseId === 'cmdPriemp') {
+                        document.getElementById('flow1').classList.toggle('pipe-flow', isActive);
+                        document.getElementById('flow2').classList.toggle('pipe-flow', isActive);
+                    } else {
+                        document.getElementById('flow3').classList.toggle('pipe-flow', isActive);
+                    }
+                }
+            }
+
+            // 4. Gestione Errori (Fail) - Funziona sia su propChange che su oggetto intero
+            let currentFail = null;
+            if (item.id.endsWith('_fail')) {
+                currentFail = (item.value === true || item.value === "yes");
+            } else if (isFullObject && item.fail !== undefined) {
+                currentFail = (item.fail === 'yes' || item.fail === true);
+            }
+
+            if (currentFail !== null) {
+                if (pumpEl) pumpEl.classList.toggle('error', currentFail);
+                if (valEl) valEl.style.color = currentFail ? 'var(--danger)' : 'var(--water)';
+            }
+
+            // 5. Logica LED
+            if (ledEl) {
+                const isOn = (item.id.endsWith('_value') || isFullObject) ? 
+                             (item.value === true || item.value === "true" || item.value === 1) : 
+                             null;
+                if (isOn !== null) ledEl.classList.toggle('led-on', isOn);
+            }
+        }
+
+        // Autoconnect se i parametri sono nel localStorage (opzionale)
+        window.onload = () => {
+            const h = localStorage.getItem('syn_mqtt_host');
+            const t = localStorage.getItem('syn_mqtt_topic');
+            if(h) document.getElementById('mqttHost').value = h;
+            if(t) document.getElementById('mqttTopic').value = t;
+            
+            // Tenta la connessione automatica
+            connect();
+        };
+
+        // Salvataggio config
+        function saveConfig() {
+            localStorage.setItem('syn_mqtt_host', document.getElementById('mqttHost').value);
+            localStorage.setItem('syn_mqtt_topic', document.getElementById('mqttTopic').value);
+        }
+        document.querySelectorAll('input').forEach(i => i.addEventListener('change', saveConfig));
+
+    </script>
+</body>
+</html>

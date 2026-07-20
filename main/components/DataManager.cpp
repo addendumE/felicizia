@@ -413,8 +413,10 @@ void DataManager::loop()
         ledTorbidita.setValue(!conducibilitaOk.getValue());
         ledErrorePompaFosso.setValue(cmdPompaRiempimento.getFail());
         ledErrorePompaSerbatoio.setValue(cmdPompaIrrigazione.getFail());
+        loopCnt++;
+        if (loopCnt < 600) continue;
         doOutput();
-        if (++loopCnt % 600 == 0)
+        if (loopCnt % 600 == 0)
         {
             ts.clean();
             ts.setValue(1,vbatt.getValue());
