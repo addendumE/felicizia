@@ -101,6 +101,7 @@ void OneWire::loop(void)
 				good[i]=false;
 				Lock::give();
 			}
+			vTaskDelay(pdMS_TO_TICKS(500));
 		}
 	}
 }
