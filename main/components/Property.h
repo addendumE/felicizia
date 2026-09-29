@@ -37,7 +37,6 @@ public:
 	bool getPersistance();
 	bool getWritable();
 protected:
-	string value;
 private:
 	ValueType type;
 	Mode mode;
@@ -54,6 +53,7 @@ public:
 	string toString(bool raw);
 	SetResult set(const string &val);
 private:
+	string value;
 	onSet onSetCback;
 };
 
@@ -71,6 +71,7 @@ private:
 	onSet onSetCback;
 	Unit unit;
 	int decimals;
+	float value;
 };
 
 class IntProperty:public Property
@@ -84,6 +85,7 @@ public:
 	SetResult set(int _value);
 private:
 	onSet onSetCback;
+	int value;
 };
 
 class BoolProperty:public Property
@@ -100,6 +102,7 @@ private:
 	onSet onSetCback;
 	string trues;
 	string falses;
+	bool value;
 };
 
 class EnumProperty:public Property
@@ -115,6 +118,7 @@ public:
 private:
 	onSet onSetCback;
 	vector <string> strings;
+	int value;
 };
 
 

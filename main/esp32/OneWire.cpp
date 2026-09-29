@@ -6,64 +6,127 @@
 static const char *TAG="OneW";
 
 OneWire::OneWire():
-		Thread("oneWire"),
-		temperatures({}),
-		good({}),
+		Thread("oneWire",2560),
+		temperatures({0.0f}),
+		errCnt({0}),
 		ds18b20_device_num(0),
 		bus(NULL),
 		bus_config({}),
 		rmt_config({})
 {
-	for (int i=0; i<EXAMPLE_ONEWIRE_MAX_DS18B20; i++)
-	{
-		temperatures[i] = 0.0f;
-	}
 };
 
 OneWire::~OneWire()
 {
 };
 
+bool OneWire::searchDevices(std::vector<onewire_device_address_t>& devices)
+{
+    devices.clear();
+
+    onewire_device_iter_handle_t iter = nullptr;
+
+    esp_err_t ret = onewire_new_device_iter(bus, &iter);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Cannot create 1-Wire iterator: %s",
+                 esp_err_to_name(ret));
+        return false;
+    }
+
+    while (true) {
+        onewire_device_t device;
+
+        ret = onewire_device_iter_get_next(iter, &device);
+
+        if (ret == ESP_ERR_NOT_FOUND) {
+            break;
+        }
+
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "1-Wire search error: %s",
+                     esp_err_to_name(ret));
+            onewire_del_device_iter(iter);
+            return false;
+        }
+
+        // Evita duplicati, utile anche nel caso di una
+        // futura implementazione con più scansioni.
+        bool duplicate = false;
+
+        for (const auto& address : devices) {
+            if (address == device.address) {
+                duplicate = true;
+                break;
+            }
+        }
+
+        if (!duplicate) {
+            devices.push_back(device.address);
+
+            ESP_LOGI(TAG,
+                     "Found device: %016llX",
+                     device.address);
+        }
+    }
+
+    onewire_del_device_iter(iter);
+
+    return true;
+}
 
 bool OneWire::init(int gpio)
 {
 	 bus_config.bus_gpio_num = gpio;
+     bus_config.flags.en_pull_up =1;
 	 rmt_config.max_rx_bytes = 10; // 1byte ROM command + 8byte ROM number + 1byte device command
 	 ESP_ERROR_CHECK(onewire_new_bus_rmt(&bus_config, &rmt_config, &bus));
-	gpio_pullup_en((gpio_num_t) gpio);
-	 gpio_set_drive_capability((gpio_num_t) gpio, GPIO_DRIVE_CAP_3);
 	 ESP_LOGI(TAG, "1-Wire bus installed on GPIO%d", gpio);
-	 onewire_device_iter_handle_t iter = NULL;
-	 onewire_device_t next_onewire_device;
-	 esp_err_t search_result = ESP_OK;
-	 // create 1-wire device iterator, which is used for device search
-	 ESP_ERROR_CHECK(onewire_new_device_iter(bus, &iter));
-	 ESP_LOGI(TAG, "Device iterator created, start searching...");
-	 do {
-		 search_result = onewire_device_iter_get_next(iter, &next_onewire_device);
-		 if (search_result == ESP_OK) { // found a new device, let's check if we can upgrade it to a DS18B20
-			 ds18b20_config_t ds_cfg = {};
-             onewire_device_address_t address;
-			 if (ds18b20_new_device_from_enumeration(&next_onewire_device, &ds_cfg, &ds18b20s[ds18b20_device_num]) == ESP_OK) {
-                ds18b20_get_device_address(ds18b20s[ds18b20_device_num], &address);
-                ESP_LOGI(TAG, "Found a DS18B20[%d], address: %016llX", ds18b20_device_num, address);
-                ds18b20_device_num++;
-            } else {
-                ESP_LOGI(TAG, "Found an unknown device, address: %016llX", next_onewire_device.address);
-            }
-		 }
-	} while (search_result != ESP_ERR_NOT_FOUND);
-	ESP_ERROR_CHECK(onewire_del_device_iter(iter));
+	 
+	 std::vector<onewire_device_address_t> addresses;
+	 for (auto i=0;i<5;i++)
+	 {
+		searchDevices(addresses);
+		if (addresses.size() == EXAMPLE_ONEWIRE_MAX_DS18B20)
+		{
+			break;
+		}
+		else
+		{
+			vTaskDelay(pdMS_TO_TICKS(50));
+		}
+	}
+
+	ds18b20_device_num = 0;
+
+	for (const auto& address : addresses) {
+
+		onewire_device_t device = {
+			.address = address,
+		};
+
+		ds18b20_config_t ds_cfg = {};
+
+		if (ds18b20_new_device_from_enumeration(
+				&device,
+				&ds_cfg,
+				&ds18b20s[ds18b20_device_num]) == ESP_OK) {
+
+			ESP_LOGI(TAG,
+					"Found DS18B20[%d]: %016llX",
+					ds18b20_device_num,
+					address);
+          ESP_ERROR_CHECK(ds18b20_set_resolution(ds18b20s[ds18b20_device_num], DS18B20_RESOLUTION_11B));
+			ds18b20_device_num++;
+		} else {
+			ESP_LOGI(TAG,
+					"Unknown 1-Wire device: %016llX",
+					address);
+		}
+	}
 
     ESP_LOGI(TAG, "Searching done, %d DS18B20 device(s) found", ds18b20_device_num);
-    // set resolution for all DS18B20s
-      for (int i = 0; i < ds18b20_device_num; i++) {
-         // set resolution
-          ESP_ERROR_CHECK(ds18b20_set_resolution(ds18b20s[i], DS18B20_RESOLUTION_11B));
-      }
-
-      Thread::start();
-      return true;
+    Thread::start();
+    return true;
 }
 
 void OneWire::loop(void)
@@ -74,7 +137,7 @@ void OneWire::loop(void)
 		Lock::take();
 		for (int i=0; i<ds18b20_device_num; i++)
 		{
-			good[i]=false;
+			
 			if (ret == ESP_OK)
 			{
 				float res = -100.0f;
@@ -83,10 +146,11 @@ void OneWire::loop(void)
 				{
 					ESP_LOGI(TAG, "temperature read from DS18B20[%d]: %f °C", i, res);
 					temperatures[i] = res;
-					good[i]=true;
+					errCnt[i]=0;
 				}
 				else
 				{
+					errCnt[i]++;
 					ESP_LOGE(TAG, "ds18b20_get_temperature %d",ret);
 				}
 			}

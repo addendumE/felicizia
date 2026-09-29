@@ -6,10 +6,11 @@
 
 static const char *TAG="UsRange";
 UsRange::UsRange(int com_port,int rxPin):
-    Thread("UsRange"),
+    Thread("UsRange",2048),
     com_port((uart_port_t)com_port),
     distance(0.0f),
-    fail(true)
+    fail(true),
+    failCnt(0)
 {
     ESP_LOGI(TAG,"init on com %d gpio %d",com_port,rxPin);
     bzero((void*)&uart_config,sizeof(uart_config));
@@ -26,7 +27,6 @@ UsRange::UsRange(int com_port,int rxPin):
     Thread::start();
 
 }
-
 UsRange::~UsRange()
 {
 
@@ -44,19 +44,34 @@ bool UsRange::getMeasure(float &val)
 
 void UsRange::loop(void)
 {
-    uint8_t data[4];
     while (1) {
-        
+        uint8_t data[4];
         // Read data from the UART
-        int len = uart_read_bytes(com_port, data, sizeof(data), pdMS_TO_TICKS(1000));
+        int len = uart_read_bytes(com_port, &data[0], sizeof(data), pdMS_TO_TICKS(150));
         take();
-        if ( (len==4) && (data[0]==0xFF) && ( (uint8_t)(data[0]+data[1]+data[2])==data[3]))  {
-            distance = (256.0*data[1]+data[2])/1000.0;
-            fail = false;
-        }
-        else
+        fail = false;
+        if ( (len==sizeof(data)) && (data[0]==0xFF))
         {
-            fail = true;
+            uint8_t cks = data[0] + data[1] + data[2] ;
+            if (cks == data[3])
+            {
+                distance = (float)(256*data[1]+data[2])/1000.0f;
+                failCnt = 0;
+            }
+            else
+            {
+                len = 0;
+            }
+
+        }
+        if (len != sizeof(data))
+        {
+            uart_flush_input(com_port);
+            failCnt++;
+            if (failCnt > 10)
+            {
+              fail = true;
+            }
         }
         give();
     }

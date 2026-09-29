@@ -60,7 +60,7 @@ void Websocket::start(int port)
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 	config.uri_match_fn = httpd_uri_match_wildcard;  // Abilita wildcard
 	config.server_port = port;
-	config.stack_size = 8192; // increase from default 4096
+	config.stack_size = 4096; // increase from default 4096
 	//config.task_queue_size = 20;   // esempio
 	// Start the httpd server
 	ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
@@ -84,7 +84,7 @@ void Websocket::ws_tx_work_cb(void *arg)
 	delete job;
 }
 
-#define WS_CHUNK_SIZE 8192  // dimensione frammento (puoi adattarla)
+#define WS_CHUNK_SIZE 4096  // dimensione frammento (puoi adattarla)
 
 bool Websocket::ws_enqueue_fragmented_text(const string &msg)
 {
@@ -236,7 +236,7 @@ esp_err_t Websocket::callback_http(httpd_req_t *req)
     return ESP_OK;
 }
 
-#define TMP_SIZE 8192
+#define TMP_SIZE 4096
 esp_err_t Websocket::callback_http_upload(httpd_req_t *req)
 {
 	Websocket &me = *(Websocket*) req->user_ctx;

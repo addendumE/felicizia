@@ -9,7 +9,7 @@ static const char * TAG="APP";
 
 MainApp::MainApp():
 	reboot("reb", 5000),
-	otaConfirm("ota",20000),
+	otaConfirm("ota",60000),
 	nvs("APP",NVS_READWRITE),
 	objManager(new ObjManager()),
 	mqtt(new MqttClient()),

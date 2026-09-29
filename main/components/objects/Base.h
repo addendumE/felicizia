@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
-#include <map>
 #include <vector>
+#include <utility>
 #include "cJSON.h"
 #include "Types.h"
 #include "Persistance.h"
@@ -12,6 +12,52 @@ using namespace std;
 using namespace Types;
 
 class Persistance;
+
+class PropertyList {
+public:
+	using PropertyPair = std::pair<PropertyId, Property*>;
+	using Container = std::vector<PropertyPair>;
+	using const_iterator = Container::const_iterator;
+	using iterator = Container::iterator;
+
+	const_iterator begin() const { return items.begin(); }
+	const_iterator end() const { return items.end(); }
+	iterator begin() { return items.begin(); }
+	iterator end() { return items.end(); }
+
+	size_t count(PropertyId id) const {
+		for (const auto &item : items) {
+			if (item.first == id) return 1;
+		}
+		return 0;
+	}
+
+	Property* at(PropertyId id) const {
+		for (const auto &item : items) {
+			if (item.first == id) return item.second;
+		}
+		return nullptr;
+	}
+
+	Property* operator[](PropertyId id) const {
+		return at(id);
+	}
+
+	Property*& operator[](PropertyId id) {
+		for (auto &item : items) {
+			if (item.first == id) return item.second;
+		}
+		items.push_back({id, nullptr});
+		return items.back().second;
+	}
+
+	size_t size() const { return items.size(); }
+	bool empty() const { return items.empty(); }
+	void clear() { items.clear(); }
+
+private:
+	Container items;
+};
 
 class Base {
 public:
@@ -29,7 +75,7 @@ public:
 
 	string serialize();
 	cJSON * get();
-	map <PropertyId,Property *> getProperties() {return propertyList;};
+	const PropertyList& getProperties() const { return propertyList; }
 	string getId() {return id;};
 	bool getPropertyValueBool(PropertyId);
 	Property::SetResult setPropertyValueBool(PropertyId pid, bool val);
@@ -49,13 +95,7 @@ protected:
 
 private:
 	string id;
-	struct PropertyAttr
-	{
-		ValueType type;
-		bool persist;
-		bool rw;
-	};
-	map <PropertyId,Property *> propertyList;
+	PropertyList propertyList;
 	Persistance &persistance;
 	bool getPropertyJsonValue(PropertyId, cJSON **);
 	Property::SetResult setProperty(PropertyId, cJSON *,bool &changed);

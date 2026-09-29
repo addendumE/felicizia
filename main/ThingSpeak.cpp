@@ -64,13 +64,13 @@ std::string ThingSpeak::uriEscape(const std::string& input)
         if (std::isalnum(c) ||
             c == '-' || c == '_' || c == '.' || c == '~')
         {
-            escaped += std::string((char*)&c);
+            escaped.push_back(c);
         }
         else
         {
 			char buf[4];
    			snprintf(buf, sizeof(buf), "%%%02X", (int)c);
-   			escaped += std::string(buf);
+   			escaped+=std::string(buf);
         }
     }
 

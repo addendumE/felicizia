@@ -37,7 +37,7 @@ const PropertyEntry propertyEntries[] = {
 	{PROP_FILTER, "filter"},
 	{PROP_FEEDBACK, "feedback"},
 	{PROP_MQTT_URI, "mqtt_uri"},
-	{PROP_UID, "uid"}
+	{PROP_UID, "uid"},
 };
 const int propertyEntriesCount = sizeof(propertyEntries) / sizeof(PropertyEntry);
 

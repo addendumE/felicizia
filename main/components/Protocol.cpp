@@ -119,6 +119,11 @@ string Protocol::onMessage(const string &msg)
 		handleConfWrite(jDataReq,&jDataResp);
 		res = RES_OK;
 	}
+	//else if (cmd == "reboot")
+	//{
+		//handleConfWrite(jDataReq,&jDataResp);
+		//res = RES_OK;
+	//}
 	if (jDataResp)
 	{
 		cJSON_AddItemToObject(jResp,"data",jDataResp);

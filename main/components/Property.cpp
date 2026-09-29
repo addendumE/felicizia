@@ -54,27 +54,24 @@ FloatProperty::FloatProperty(Mode mode, Unit unit, int decimals,onSet onSetCback
 		Property(VALUE_TYPE_FLOAT, mode),
 		onSetCback(onSetCback),
 		unit(unit),
-		decimals(decimals)
+		decimals(decimals),
+		value(0.0f)
 	{};
 	FloatProperty::~FloatProperty(){};
 	float FloatProperty::get()
 	{
-		if (value.empty())
-        	return 0.0f;
-		else
-        	return std::stof(value);	
+		return value;	
 	}
 
 	string FloatProperty::toString(bool raw) {
-		float val = get();
 		char buff[128];
 		if (raw)
 		{
-			snprintf(buff,sizeof(buff),"%f",val);
+			snprintf(buff,sizeof(buff),"%f",value);
 		}
 		else
 		{
-			snprintf(buff,sizeof(buff),"%.*f %s",decimals,val,getUnitName(unit));
+			snprintf(buff,sizeof(buff),"%.*f %s",decimals,value,getUnitName(unit));
 
 			
 		}
@@ -90,25 +87,23 @@ FloatProperty::FloatProperty(Mode mode, Unit unit, int decimals,onSet onSetCback
 		}
 		if (ret == SET_OK)
 		{
-			value = to_string(_val);
+			value = _val;
 		}
 		return ret;
 	}
 
 IntProperty::IntProperty(Mode mode, onSet onSetCback):
 		Property(VALUE_TYPE_INTEGER, mode),
-		onSetCback(onSetCback)
+		onSetCback(onSetCback),
+		value(0)
 	{};
 IntProperty::~IntProperty(){};
 	int IntProperty::get(){
-		if (value.empty())
-        	return 0;
-		else
-        	return std::stoi(value);
+		return value;
 	}
 
 	string IntProperty::toString(bool raw) {
-		return value;
+		return to_string(value);
 	}
 
 
@@ -121,7 +116,7 @@ IntProperty::~IntProperty(){};
 		}
 		if (ret == SET_OK)
 		{
-			value = to_string(_value);
+			value = _value;
 		}
 		return ret;
 	}
@@ -131,18 +126,19 @@ BoolProperty::BoolProperty(Mode mode, onSet onSetCback, string trues, string fal
 		Property(VALUE_TYPE_BOOL, mode),
 		onSetCback(onSetCback),
 		trues(trues),
-		falses(falses)
+		falses(falses),
+		value(false)
 	{};
 	BoolProperty::~BoolProperty(){};
 	bool BoolProperty::get() {
-		return (value=="true"); 
+		return value; 
 	}
 
 	string BoolProperty::toString(bool raw) {
 		if (raw)
-			return (get()) ? "true":"false";
+			return (value) ? "true":"false";
 		else
-			return (get()) ? trues:falses;
+			return (value) ? trues:falses;
 	}
 
 	Property::SetResult BoolProperty::set(bool _value) {
@@ -154,7 +150,7 @@ BoolProperty::BoolProperty(Mode mode, onSet onSetCback, string trues, string fal
 		}
 		if (ret == SET_OK)
 		{
-			value = (_value)? "true":"false";
+			value = _value;
 		}
 		return ret;
 	}
@@ -162,7 +158,8 @@ BoolProperty::BoolProperty(Mode mode, onSet onSetCback, string trues, string fal
 
 EnumProperty::EnumProperty(Mode mode, onSet onSetCback, vector <string> *_strings):
 		Property(VALUE_TYPE_ENUM, mode),
-		onSetCback(onSetCback)
+		onSetCback(onSetCback),
+		value(0)
 	{
 		if (_strings)
 		{
@@ -171,15 +168,14 @@ EnumProperty::EnumProperty(Mode mode, onSet onSetCback, vector <string> *_string
 	};
 EnumProperty::~EnumProperty(){};
 	int EnumProperty::get() {
-		if (value.empty()) return 0.0f;
-		return std::stoi(value);
+		return value;
 	}
 
 	string EnumProperty::toString(bool raw) {
 		if (raw)
-			return(value);
+			return(to_string(value));
 		else
-			return strings.at(get());
+			return strings.at(value);
 	}
 	vector <string> & EnumProperty::getStrings() {return strings;}
 
@@ -191,7 +187,7 @@ EnumProperty::~EnumProperty(){};
 		}
 		if (ret == SET_OK)
 		{
-			value = to_string(_value);
+			value = _value;
 		}
 		return ret;
 	}

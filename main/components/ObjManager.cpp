@@ -6,6 +6,7 @@
  */
 
 #include "ObjManager.h"
+#include "JsonHelper.h"
 #include "esp_log.h"
 
 static const char *TAG="ObjManager";
@@ -22,12 +23,12 @@ void ObjManager::getConf(string &s)
 	cJSON *jOut = cJSON_CreateObject();
 	for (auto iobj:objects)
 	{
-		map <PropertyId,Property *> properties = iobj.second->getProperties();
+		const auto &properties = iobj.second->getProperties();
 		cJSON *jProperties = cJSON_CreateObject();
 		cJSON_AddItemToObject(jOut, iobj.second->getId().c_str(), jProperties);
-		for (auto iprop:properties)
+		for (const auto &iprop:properties)
 		{
-			
+
 			if (iprop.second->getPersistance())
 			{
 				cJSON *jProp= cJSON_CreateString(iobj.second->getPropertyValueString(iprop.first,true).c_str());
@@ -35,9 +36,7 @@ void ObjManager::getConf(string &s)
 			}
 		}
 	}
-	char *txt = cJSON_PrintUnformatted(jOut);
-	s=string(txt);
-	free(txt);
+	s = JsonHelper::print(jOut, 2048);
 	cJSON_Delete(jOut);
 }
 bool ObjManager::setConf(string &s)

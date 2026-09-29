@@ -49,6 +49,5 @@ void DigitalOutput::setValue(bool val)
 
 bool DigitalOutput::getValue()
 {
-	bool _found;
 	return getPropertyValueBool(PROP_VALUE);
 }

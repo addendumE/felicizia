@@ -10,9 +10,10 @@
 
 #define TAG "Thread"
 
-Thread::Thread(const string name):
+Thread::Thread(const string name,size_t stack_size):
 	name(name),
-	handle(NULL)
+	handle(NULL),
+	stack_size(stack_size)
 {
 	ESP_LOGI(TAG,"created");
 }
@@ -25,7 +26,7 @@ bool Thread::start()
 	if (handle == NULL)
 	{
         ESP_LOGI(TAG,"start task %s",name.c_str());
-		ret = xTaskCreate(taskHandle,name.c_str(),8192,this,10,&handle) == pdPASS;
+		ret = xTaskCreate(taskHandle,name.c_str(),stack_size,this,10,&handle) == pdPASS;
 	}
 	else
 	{

@@ -18,5 +18,6 @@ class UsRange: public Thread, public Lock
     uart_config_t uart_config;
     float distance;
     bool fail;
+    int failCnt;
     void loop();
 };

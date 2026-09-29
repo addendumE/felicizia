@@ -59,6 +59,7 @@ void AnalogInput::setValue(float val,bool fail)
 		float old = getPropertyValueFloat(PROP_VALUE);
 		if (flt >1.0f ) flt = 1.0f;
 		val = val*flt+old*(1.0f-flt);
+		if (fail) val = getPropertyValueFloat(PROP_OVERRIDE_VALUE);
 		setPropertyValueFloat(PROP_VALUE,val);
 	}
 }

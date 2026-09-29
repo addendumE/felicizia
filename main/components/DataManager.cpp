@@ -12,7 +12,7 @@ static const char *TAG="DM";
 #define IN_FEEDBACK_P_SERBATOIO    GPIO_NUM_20
 
 DataManager::DataManager (ObjManager &om,Persistance &persistance,Hal &hal):
-Thread("dataManager"),
+Thread("dataManager",8192),
 om(om),
 #if !defined(LINUX_PLATFORM) && !defined(IICdebug)
 mcp23x17Dev({}),
@@ -115,7 +115,7 @@ oldOut({})
         .intr_type = GPIO_INTR_DISABLE
     };
     gpio_config(&out_conf);
-    ow.init(GPIO_NUM_2);
+    
     gpio_config_t in_conf = {};
     in_conf.intr_type = GPIO_INTR_DISABLE;
     in_conf.mode = GPIO_MODE_INPUT;
@@ -123,7 +123,9 @@ oldOut({})
     in_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     in_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&in_conf);
+
 #endif
+    ow.init(GPIO_NUM_2);
     
     start();
 }
@@ -218,11 +220,11 @@ void DataManager::doInput()
 
     // STORAGE LEVEL
     bool fail = livSerbatoioMeter.getMeasure(tmpVal);
-    livSerbatoio.setValue(tmpVal ,tmpVal>=5.9f || fail);
+    livSerbatoio.setValue(tmpVal , fail);
 
     // TRENCH LEVEL
     fail = livFossoMeter.getMeasure(tmpVal);
-    livFosso.setValue(tmpVal,tmpVal>=5.9f || fail);
+    livFosso.setValue(tmpVal, fail);
 
     // DEVICE
     device.setFreeHeap(hal.heapOccupation());
@@ -350,9 +352,10 @@ bool DataManager::pompa_on(int irrigazioni_al_giorno,
 }
 void DataManager::loop()
 {
+
     while (true)
     {
-        msleep(1000);
+   		vTaskDelay(pdMS_TO_TICKS(1000));
         doInput();
 
         livSvuotamentoCanaleOk.setValue(livFosso.getValue());

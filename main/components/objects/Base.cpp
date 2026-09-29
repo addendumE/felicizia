@@ -1,5 +1,6 @@
 
 #include "Base.h"
+#include "JsonHelper.h"
 #include "esp_log.h"
 #include <string>
 #include <sstream>
@@ -16,6 +17,10 @@ Base::Base(Type _type, string id,string _name, Persistance &persistance):
 }
 
 Base::~Base() {
+	for (auto &item : propertyList)
+	{
+		delete item.second;
+	}
 }
 
 bool Base::addFloatProperty(PropertyId p, Property::Mode mode, float _default, Unit unit, int decimals, FloatProperty::onSet onSetCback)
@@ -101,7 +106,13 @@ bool Base::addBoolProperty(PropertyId p,  Property::Mode mode, bool _default , s
 
 bool Base::getPropertyJsonValue(PropertyId p , cJSON **jObj)
 {
-	switch (propertyList[p]->getType())
+	Property *prop = propertyList.at(p);
+	if (!prop)
+	{
+		*jObj = cJSON_CreateNull();
+		return false;
+	}
+	switch (prop->getType())
 	{
 		case VALUE_TYPE_BOOL:
 		{
@@ -207,17 +218,22 @@ cJSON * Base::get()
 cJSON * Base::getPropertyJson(PropertyId pId)
 {
 	cJSON *jItem = cJSON_CreateObject();
+	Property *pProp = propertyList.at(pId);
+	if (!pProp)
+	{
+		return jItem;
+	}
 	cJSON *jValue;
 	getPropertyJsonValue(pId,&jValue);
 	cJSON_AddItemToObject(jItem, "value", jValue);
-	cJSON_AddBoolToObject(jItem, "rw", propertyList.at(pId)->getWritable());
-	cJSON_AddBoolToObject(jItem, "persist", propertyList.at(pId)->getPersistance());
-	cJSON_AddNumberToObject(jItem, "type", propertyList.at(pId)->getType());
-	cJSON_AddStringToObject(jItem, "svalue", (propertyList.at(pId)->toString()).c_str());
-	if (propertyList.at(pId)->getType() == VALUE_TYPE_ENUM)
+	cJSON_AddBoolToObject(jItem, "rw", pProp->getWritable());
+	cJSON_AddBoolToObject(jItem, "persist", pProp->getPersistance());
+	cJSON_AddNumberToObject(jItem, "type", pProp->getType());
+	cJSON_AddStringToObject(jItem, "svalue", (pProp->toString()).c_str());
+	if (pProp->getType() == VALUE_TYPE_ENUM)
 	{
 		cJSON *jArray = cJSON_CreateArray();
-		EnumProperty *p = (EnumProperty *)(propertyList.at(pId));
+		EnumProperty *p = (EnumProperty *)(pProp);
 		vector <string> &strings = p->getStrings();
 		for (auto o:strings)
 		{
@@ -233,10 +249,7 @@ cJSON * Base::getPropertyJson(PropertyId pId)
 string Base::serialize()
 {
 	cJSON * jOut = get();
-	char *txt = cJSON_PrintUnformatted(jOut);
-	string res;
-	res = txt;
-	free(txt);
+	string res = JsonHelper::print(jOut, 512);
 	cJSON_Delete(jOut);
 	return res;
 }
