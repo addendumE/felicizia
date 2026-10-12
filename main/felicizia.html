@@ -127,6 +127,47 @@
         .led-on.led-warning { background: #ffcc00; box-shadow: 0 0 10px #ffcc00; }
         .led-on.led-error { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
         .last-update { text-align: center; font-size: 0.8em; color: #888; margin: -20px 0 20px 0; }
+
+        /* Status Bar Inferiore */
+        .status-bar {
+            background: var(--card);
+            padding: 15px 25px;
+            border-radius: 10px;
+            display: flex;
+            gap: 30px;
+            width: 100%;
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: space-around;
+            border: 1px solid var(--primary);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+        }
+        .status-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-bar-label {
+            color: #888;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-bar-val {
+            color: var(--water);
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        @media (max-width: 600px) {
+            .status-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -194,10 +235,142 @@
             <div class="stat-card"><span>Temp. Acqua</span><span id="val_tempAcqua" class="stat-val">--</span></div>
             <div class="stat-card"><span>Conducibilità</span><span id="val_sccm" class="stat-val">--</span></div>
         </div>
+
+        <!-- Status Bar Inferiore -->
+        <div class="status-bar">
+            <div class="status-bar-item">
+                <span class="status-bar-label">Restart Reason:</span>
+                <span id="val_restartReason" class="status-bar-val">--</span>
+            </div>
+            <div class="status-bar-item">
+                <span class="status-bar-label">Restart Date:</span>
+                <span id="val_restartDate" class="status-bar-val">--</span>
+            </div>
+        </div>
     </div>
 
     <script>
         let client = null;
+
+        // Mappatura tipo esp_reset_reason_t di ESP32 IDF
+        const espResetReasons = {
+            0: "ESP_RST_UNKNOWN",       // Reset reason can not be determined
+            1: "ESP_RST_POWERON",       // Reset due to power-on event
+            2: "ESP_RST_EXT",           // Reset by external pin (not applicable for ESP32)
+            3: "ESP_RST_SW",            // Software reset via esp_restart
+            4: "ESP_RST_PANIC",         // Software reset due to exception/panic
+            5: "ESP_RST_INT_WDT",       // Reset due to interrupt watchdog
+            6: "ESP_RST_TASK_WDT",      // Reset due to task watchdog
+            7: "ESP_RST_WDT",           // Reset due to other watchdogs
+            8: "ESP_RST_DEEPSLEEP",     // Reset after exiting deep sleep mode
+            9: "ESP_RST_BROWNOUT",      // Brownout reset (software or hardware)
+            10: "ESP_RST_SDIO",         // Reset over SDIO
+            11: "ESP_RST_USB",          // Reset by USB peripheral
+            12: "ESP_RST_JTAG",         // Reset by JTAG
+            13: "ESP_RST_EFUSE",        // Reset due to efuse error
+            14: "ESP_RST_PWR_GLITCH",   // Reset due to power glitch detected
+            15: "ESP_RST_CPU_LOCKUP"    // Reset due to CPU lock up
+        };
+
+        const espResetDescriptions = {
+            0: "Reset reason cannot be determined",
+            1: "Power-on event",
+            2: "Reset by external pin",
+            3: "Software reset via esp_restart",
+            4: "Software reset due to exception/panic",
+            5: "Interrupt watchdog reset",
+            6: "Task watchdog reset",
+            7: "Other watchdog reset",
+            8: "Reset after exiting deep sleep",
+            9: "Brownout reset (software or hardware)",
+            10: "Reset over SDIO",
+            11: "Reset by USB peripheral",
+            12: "Reset by JTAG",
+            13: "Reset due to eFuse error",
+            14: "Reset due to power glitch detected",
+            15: "Reset due to CPU lock up"
+        };
+
+        function formatResetReason(val) {
+            if (val === null || val === undefined || val === '') return '--';
+            const rawVal = typeof val === 'object' && val !== null ? (val.value !== undefined ? val.value : val.svalue) : val;
+            const code = parseInt(rawVal, 10);
+            if (!isNaN(code) && espResetReasons[code] !== undefined) {
+                return espResetReasons[code];
+            }
+            if (typeof rawVal === 'string' && rawVal.startsWith('ESP_RST_')) {
+                return rawVal;
+            }
+            return isNaN(code) ? String(rawVal) : `ESP_RST_UNKNOWN (${code})`;
+        }
+
+        function updateResetReason(val) {
+            const text = formatResetReason(val);
+            const el = document.getElementById('val_restartReason') || document.getElementById('val_reset_reason');
+            if (el) {
+                el.innerText = text;
+                const rawVal = typeof val === 'object' && val !== null ? (val.value !== undefined ? val.value : val.svalue) : val;
+                const code = parseInt(rawVal, 10);
+                if (!isNaN(code) && espResetDescriptions[code]) {
+                    el.title = espResetDescriptions[code];
+                }
+            }
+        }
+
+        function formatRestartDate(val) {
+            if (val === null || val === undefined || val === '') return null;
+            const rawVal = typeof val === 'object' && val !== null ? (val.value !== undefined ? val.value : val.svalue) : val;
+            const uptimeMinutes = parseFloat(rawVal);
+            if (isNaN(uptimeMinutes)) return null;
+
+            // uptimeMinutes rappresenta l'uptime in minuti con decimali: sottraiamo da Date.now()
+            const restartTimestamp = Date.now() - (uptimeMinutes * 60 * 1000);
+            const d = new Date(restartTimestamp);
+            const pad = n => String(n).padStart(2, '0');
+            return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        function updateRestartDate(val) {
+            const text = formatRestartDate(val);
+            if (!text) return;
+            const el = document.getElementById('val_restartDate') || document.getElementById('val_uptime');
+            if (el) {
+                el.innerText = text;
+                const rawVal = typeof val === 'object' && val !== null ? (val.value !== undefined ? val.value : val.svalue) : val;
+                const uptimeMinutes = parseFloat(rawVal);
+                if (!isNaN(uptimeMinutes)) {
+                    el.title = `Uptime: ${uptimeMinutes.toFixed(1)} min`;
+                }
+            }
+        }
+
+        function requestDeviceDetails() {
+            if (!client || !client.connected) return;
+            const topic = document.getElementById('mqttTopic').value;
+            client.publish(`${topic}/Downlink`, JSON.stringify({id: "sync_dev", cmd: "getObject", data: {objId: "device"}}));
+        }
+
+        function handleDeviceObject(data) {
+            if (!data) return;
+            if (data.id === 'device') {
+                if (data.properties) {
+                    if (Array.isArray(data.properties)) {
+                        data.properties.forEach(updateUI);
+                    } else {
+                        if (data.properties.reset_reason !== undefined) {
+                            const p = data.properties.reset_reason;
+                            updateResetReason(typeof p === 'object' && p !== null ? (p.value !== undefined ? p.value : p.svalue) : p);
+                        }
+                        if (data.properties.uptime !== undefined) {
+                            const p = data.properties.uptime;
+                            updateRestartDate(typeof p === 'object' && p !== null ? (p.value !== undefined ? p.value : p.svalue) : p);
+                        }
+                    }
+                }
+                if (data.reset_reason !== undefined) updateResetReason(data.reset_reason);
+                if (data.uptime !== undefined) updateRestartDate(data.uptime);
+            }
+        }
 
         function connect() {
             const host = document.getElementById('mqttHost').value;
@@ -219,6 +392,7 @@
                 updateStatus("🟢 Connesso");
                 client.subscribe(`${topic}/Uplink`);
                 client.publish(`${topic}/Downlink`, JSON.stringify({id: "sync", cmd: "getObjectList"}));
+                requestDeviceDetails();
             });
 
             client.on('message', (t, message) => {
@@ -226,6 +400,8 @@
                     const msg = JSON.parse(message.toString());
                     if (msg.cmd === "getObjectList" || msg.cmd === "propChange") {
                         if (msg.data) msg.data.forEach(updateUI);
+                    } else if (msg.cmd === "getObject" && msg.data) {
+                        handleDeviceObject(msg.data);
                     }
                     document.getElementById('updateTime').innerText = "Ultimo aggiornamento: " + new Date().toLocaleTimeString();
                 } catch(e) { console.error("Errore parsing MQTT", e); }
@@ -311,6 +487,19 @@
                              (item.value === true || item.value === "true" || item.value === 1) : 
                              null;
                 if (isOn !== null) ledEl.classList.toggle('led-on', isOn);
+            }
+
+            // 6. Logica Device (Restart Reason e Restart Date)
+            if (item.id === 'device_reset_reason' || item.id === 'device_reset_reason_value' || item.id === 'reset_reason' || baseId === 'reset_reason' || baseId === 'device_reset_reason') {
+                updateResetReason(item.value !== undefined ? item.value : item.svalue);
+            }
+            if (item.id === 'device_uptime' || item.id === 'device_uptime_value' || item.id === 'uptime' || baseId === 'uptime' || baseId === 'device_uptime') {
+                updateRestartDate(item.value !== undefined ? item.value : item.svalue);
+            }
+            if (item.id === 'device') {
+                if (item.reset_reason !== undefined) updateResetReason(item.reset_reason);
+                if (item.uptime !== undefined) updateRestartDate(item.uptime);
+                requestDeviceDetails();
             }
         }
 

@@ -38,6 +38,7 @@ void MainApp::start()
 		{
 	#ifndef LINUX_PLATFORM
 			check_ota_state();
+			dataManager->setDeviceStatus("OK");
 	#endif
 		});
 

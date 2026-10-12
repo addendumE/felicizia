@@ -63,7 +63,8 @@ namespace Types
 		PROP_FEEDBACK,
 		PROP_MQTT_URI,
 		PROP_UID,
-		PROP_UPTIME
+		PROP_UPTIME,
+		PROP_RESET_REASON,
 	};
 
 	struct PropertyEntry {

@@ -39,12 +39,12 @@ AnalogInput::~AnalogInput() {
 }
 
 
-void AnalogInput::setValue(float val,bool fail)
+void AnalogInput::setValue(float val,bool fail, bool positiveOnly)
 {
 	float cal_gain =  getPropertyValueFloat(PROP_CAL_GAIN);
 	float cal_offset = getPropertyValueFloat(PROP_CAL_OFFSET);
 	val = cal_offset + (val * cal_gain);
-
+	if (val < 0.0f && positiveOnly) val = 0.0f;
 	bool _override = getPropertyValueBool(PROP_OVERRIDE);
 	if (_override)
 	{

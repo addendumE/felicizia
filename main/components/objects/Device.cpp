@@ -8,20 +8,25 @@
 #include "Device.h"
 #include "esp_log.h"
 #include "string.h"
+#include "esp_system.h"
 #include <cstring>
 Device::Device(string id,string name, Persistance &p):
 	Base(TYPE_DEVICE,id,name,p)
 {
 	getUid();
-	addStringProperty(PROP_VALUE,Property::MODE_READONLY,"OK");
+	addStringProperty(PROP_VALUE,Property::MODE_READONLY);
 	addFloatProperty(PROP_FREE_HEAP,Property::MODE_READONLY, 0,UNIT_PERCENT,1);
+	addStringProperty(PROP_SW_VERSION,Property::MODE_READONLY);
+	addIntProperty(PROP_RESET_REASON,Property::MODE_READONLY);
+	addFloatProperty(PROP_UPTIME,Property::MODE_READONLY,0,UNIT_MINUTES,1);
 	addStringProperty(PROP_SSID,Property::MODE_WRITABLE_PERSISTENT,"");
 	addStringProperty(PROP_SSID_KEY,Property::MODE_WRITABLE_PERSISTENT,"");
 	addStringProperty(PROP_TS_KEY,Property::MODE_WRITABLE_PERSISTENT,"");
 	addStringProperty(PROP_MQTT_URI,Property::MODE_WRITABLE_PERSISTENT,"mqtt://broker.hivemq.com:1883");
-	addStringProperty(PROP_SW_VERSION,Property::MODE_READONLY,BUILD_VERSION);
-	addStringProperty(PROP_UID,Property::MODE_READONLY,uid);
-	addFloatProperty(PROP_UPTIME,Property::MODE_READONLY,0,UNIT_MINUTES,1);
+	addStringProperty(PROP_UID,Property::MODE_READONLY,uid);	
+	setPropertyValueString(PROP_VALUE,"STARTING");
+	setPropertyValueString(PROP_SW_VERSION,BUILD_VERSION);
+	setPropertyValueInt(PROP_RESET_REASON,(int)esp_reset_reason());
 }
 
 Device::~Device() {

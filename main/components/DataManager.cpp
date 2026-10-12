@@ -220,11 +220,11 @@ void DataManager::doInput()
 
     // STORAGE LEVEL
     bool fail = livSerbatoioMeter.getMeasure(tmpVal);
-    livSerbatoio.setValue(tmpVal , fail);
+    livSerbatoio.setValue(tmpVal , fail, true);
 
     // TRENCH LEVEL
     fail = livFossoMeter.getMeasure(tmpVal);
-    livFosso.setValue(tmpVal, fail);
+    livFosso.setValue(tmpVal, fail, true);
 
     // DEVICE
     device.setFreeHeap(hal.heapOccupation());
