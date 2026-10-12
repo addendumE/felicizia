@@ -62,7 +62,8 @@ namespace Types
 		PROP_FILTER,
 		PROP_FEEDBACK,
 		PROP_MQTT_URI,
-		PROP_UID
+		PROP_UID,
+		PROP_UPTIME
 	};
 
 	struct PropertyEntry {

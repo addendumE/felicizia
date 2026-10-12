@@ -95,6 +95,7 @@ void MainApp::startMqtt()
 #else
 				if (offset == 0) {
 					dataManager->stop();
+					dataManager->fwUpgrade();
 					otaStart();
 				}	
 				otaProcess(payload,datasize);

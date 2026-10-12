@@ -55,7 +55,7 @@ void app_main(void)
     //esp_log_level_set("Wifi", ESP_LOG_INFO);
    // esp_log_level_set("MqttClient", ESP_LOG_INFO);
     esp_log_level_set("APP", ESP_LOG_INFO);
-    //esp_log_level_set("OneW", ESP_LOG_INFO);
+    esp_log_level_set("OneW", ESP_LOG_INFO);
    // esp_log_level_set("DM", ESP_LOG_INFO);
     ESP_ERROR_CHECK(i2cdev_init());
     startup();

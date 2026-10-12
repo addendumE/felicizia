@@ -47,7 +47,10 @@ public:
     }
 
     void setDeviceStatus(const string &status);
-
+    void fwUpgrade()
+    {
+        ow.take();
+    }
 private:
     ButtonCallBack bootButtonCallBack;
 

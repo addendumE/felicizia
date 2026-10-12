@@ -321,7 +321,14 @@ int Base::getPropertyValueInt(PropertyId p)
 	int ret = 0;
 	if (propertyList.count(p) > 0)
 	{
-		ret = static_cast<IntProperty*>(propertyList[p])->get();
+		if (propertyList[p]->getType() == VALUE_TYPE_ENUM)
+		{
+			ret = static_cast<EnumProperty*>(propertyList[p])->get();
+		}
+		else if (propertyList[p]->getType() == VALUE_TYPE_INTEGER)
+		{
+			ret = static_cast<IntProperty*>(propertyList[p])->get();
+		}
 	}
 	else
 	{
@@ -434,15 +441,26 @@ Property::SetResult Base::setPropertyValueInt(PropertyId pid, int val)
 	Property::SetResult ret = Property::SET_OK;
 	if (propertyList.count(pid) > 0)
 	{
-		if (propertyList[pid]->getType()!=VALUE_TYPE_INTEGER && propertyList[pid]->getType()!=VALUE_TYPE_ENUM) return Property::SET_WRONG_TYPE;
-		IntProperty * p = static_cast<IntProperty*>(propertyList[pid]);
-		int old = p->get();
-		ret = p->set(val);
+		Property* prop = propertyList[pid];
+		if (prop->getType()!=VALUE_TYPE_INTEGER && prop->getType()!=VALUE_TYPE_ENUM) return Property::SET_WRONG_TYPE;
+		int old = 0;
+		if (prop->getType() == VALUE_TYPE_ENUM)
+		{
+			EnumProperty * p = static_cast<EnumProperty*>(prop);
+			old = p->get();
+			ret = p->set(val);
+		}
+		else
+		{
+			IntProperty * p = static_cast<IntProperty*>(prop);
+			old = p->get();
+			ret = p->set(val);
+		}
 		bool changed = (old!=val);
 		if (ret==Property::SET_OK && changed)
 		{
 			persistance.changeNotify(id, pid);
-			if (p->getPersistance())
+			if (prop->getPersistance())
 			{
 				bool stored =  persistance.storeInt(id, pid, val);
 				if (!stored) {

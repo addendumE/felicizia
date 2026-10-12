@@ -6,6 +6,7 @@ public:
 	Device(string id, string name,Persistance &p);
 	virtual ~Device();
 	void setFreeHeap(float);
+	void setUptime(int);
 private:
 	void getUid();
 	std::string uid;

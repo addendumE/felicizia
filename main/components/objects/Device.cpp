@@ -21,6 +21,7 @@ Device::Device(string id,string name, Persistance &p):
 	addStringProperty(PROP_MQTT_URI,Property::MODE_WRITABLE_PERSISTENT,"mqtt://broker.hivemq.com:1883");
 	addStringProperty(PROP_SW_VERSION,Property::MODE_READONLY,BUILD_VERSION);
 	addStringProperty(PROP_UID,Property::MODE_READONLY,uid);
+	addFloatProperty(PROP_UPTIME,Property::MODE_READONLY,0,UNIT_MINUTES,1);
 }
 
 Device::~Device() {
@@ -29,6 +30,11 @@ Device::~Device() {
 void Device::setFreeHeap(float fh)
 {
 	setPropertyValueFloat(PROP_FREE_HEAP,fh);
+}
+
+void Device::setUptime(int min)
+{
+	setPropertyValueFloat(PROP_UPTIME,min);
 }
 
 #ifndef LINUX_PLATFORM

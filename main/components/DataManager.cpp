@@ -202,11 +202,11 @@ void DataManager::doInput()
 
     // 1wire AIR temperatures;
     res = ow.readTemperature(0,tmpVal);
-    tempAria.setValue(tmpVal,!res);
+    tempAria.setValue(tmpVal,res);
 
     // 1wire WATER temperatures;
     res = ow.readTemperature(1,tmpVal);
-    tempAcqua.setValue(tmpVal,!res);
+    tempAcqua.setValue(tmpVal,res);
 
     //analog input #1 (TDS sensor)
     res = adcRead(ADS111X_MUX_1_GND,tmpVal);
@@ -417,7 +417,8 @@ void DataManager::loop()
         ledErrorePompaFosso.setValue(cmdPompaRiempimento.getFail());
         ledErrorePompaSerbatoio.setValue(cmdPompaIrrigazione.getFail());
         loopCnt++;
-        if (loopCnt < 600) continue;
+        device.setUptime(loopCnt/60);
+        if (loopCnt < 60) continue;
         doOutput();
         if (loopCnt % 600 == 0)
         {

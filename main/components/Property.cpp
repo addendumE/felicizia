@@ -174,12 +174,18 @@ EnumProperty::~EnumProperty(){};
 	string EnumProperty::toString(bool raw) {
 		if (raw)
 			return(to_string(value));
+		else if (value >= 0 && static_cast<size_t>(value) < strings.size())
+			return strings[value];
 		else
-			return strings.at(value);
+			return to_string(value);
 	}
 	vector <string> & EnumProperty::getStrings() {return strings;}
 
 	Property::SetResult EnumProperty::set(int _value) {
+		if (!strings.empty() && (_value < 0 || static_cast<size_t>(_value) >= strings.size()))
+		{
+			return SET_RANGE_ERROR;
+		}
 		Property::SetResult ret = SET_OK;
 		if(onSetCback)
 		{

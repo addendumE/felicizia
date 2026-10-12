@@ -101,6 +101,7 @@ bool OneWire::init(int gpio)
 	for (const auto& address : addresses) {
 
 		onewire_device_t device = {
+			.bus = bus,
 			.address = address,
 		};
 
@@ -115,7 +116,10 @@ bool OneWire::init(int gpio)
 					"Found DS18B20[%d]: %016llX",
 					ds18b20_device_num,
 					address);
-          ESP_ERROR_CHECK(ds18b20_set_resolution(ds18b20s[ds18b20_device_num], DS18B20_RESOLUTION_11B));
+			esp_err_t err = ds18b20_set_resolution(ds18b20s[ds18b20_device_num], DS18B20_RESOLUTION_11B);
+			if (err != ESP_OK) {
+				ESP_LOGW(TAG, "Failed to set resolution for DS18B20[%d]: %s", ds18b20_device_num, esp_err_to_name(err));
+			}
 			ds18b20_device_num++;
 		} else {
 			ESP_LOGI(TAG,

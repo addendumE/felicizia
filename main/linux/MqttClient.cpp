@@ -6,7 +6,7 @@
 
 static const char *TAG = "MQTT_CLIENT_LINUX";
 
-MqttClient::MqttClient() : Thread("MqttClient"), mosq(nullptr), port(1883), keepalive(60), connected(false) {
+MqttClient::MqttClient() : Thread("MqttClient",8192), mosq(nullptr), port(1883), keepalive(60), connected(false) {
     mosquitto_lib_init();
 }
 
