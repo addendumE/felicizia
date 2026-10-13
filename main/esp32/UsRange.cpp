@@ -6,7 +6,7 @@
 
 static const char *TAG="UsRange";
 UsRange::UsRange(int com_port,int rxPin):
-    Thread("UsRange",2048),
+    Thread("UsRange",4096),
     com_port((uart_port_t)com_port),
     distance(0.0f),
     fail(true),
@@ -24,6 +24,7 @@ UsRange::UsRange(int com_port,int rxPin):
     ESP_ERROR_CHECK(uart_driver_install((uart_port_t)com_port, BUF_SIZE * 2, 0, 0, NULL, intr_alloc_flags));
     ESP_ERROR_CHECK(uart_param_config((uart_port_t)com_port, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin((uart_port_t)com_port, -1, rxPin, -1, -1));
+
     Thread::start();
 
 }
@@ -47,7 +48,7 @@ void UsRange::loop(void)
     while (1) {
         uint8_t data[4];
         // Read data from the UART
-        int len = uart_read_bytes(com_port, &data[0], sizeof(data), pdMS_TO_TICKS(150));
+        int len = uart_read_bytes(com_port, &data[0], sizeof(data), pdMS_TO_TICKS(250));
         take();
         fail = false;
         if ( (len==sizeof(data)) && (data[0]==0xFF))
@@ -74,5 +75,7 @@ void UsRange::loop(void)
             }
         }
         give();
+        if (fail) vTaskDelay(pdMS_TO_TICKS(250));
+
     }
 }

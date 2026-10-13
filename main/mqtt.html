@@ -408,7 +408,13 @@
                     'dashboard_' +
                     Math.random()
                         .toString(16)
-                        .substring(2, 10)
+                        .substring(2, 10),
+                will: {
+                    topic: mqttConfig.masterTopic+"/webclient",
+                    payload: "offline",
+                    qos: 1,
+                    retain: true
+                }
             }
         );
 
@@ -418,6 +424,7 @@
 
             updateMqttState("Connesso");
             console.log("subscribe", getUplinkTopic());
+            mqttClient.publish(mqttConfig.masterTopic+"/webclient","online",{ qos: 1, retain: true })
             mqttClient.subscribe(
                 getUplinkTopic(),
                 (err) => {
