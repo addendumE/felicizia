@@ -14,6 +14,7 @@ public:
 			WIFI_CLI_FAIL
 		};
 	Mode getMode(){return mode;}
+	static bool isConnected() { return s_connected; }
 	bool off(bool silent=false);
 	bool join();
 	bool ap();
@@ -25,6 +26,7 @@ public:
 	virtual ~WifiManager();
 	virtual void onMode(Mode) = 0;
 private:
+	static bool s_connected;
 	Mode mode;
 	void loop();
 };

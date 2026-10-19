@@ -29,6 +29,7 @@ typedef enum
 #include "UsRange.h"
 #include "Hal.h"
 #include "ThingSpeak.h"
+#include "WifiManager.h"
 #pragma once
 
 class DataManager: public Thread
@@ -49,7 +50,9 @@ public:
     void setDeviceStatus(const string &status);
     void fwUpgrade()
     {
+#ifndef LINUX_PLATFORM
         ow.take();
+#endif
     }
 private:
     ButtonCallBack bootButtonCallBack;

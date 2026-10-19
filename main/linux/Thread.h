@@ -7,7 +7,7 @@
 
 class Thread {
 public:
-	Thread(std::string);
+	Thread(std::string, size_t stack_size = 4096);
 	virtual ~Thread();
 	bool start();
 	void stop();

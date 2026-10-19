@@ -90,9 +90,7 @@ void MainApp::startMqtt()
 			if (topic==dataManager->getUid()+"/Firmware")
 			{
 #ifdef LINUX_PLATFORM
-				otaStart();
-				otaProcess(payload,datasize);
-				otaEnd();
+				ESP_LOGI(TAG, "OTA firmware update ignored on Linux");
 #else
 				if (offset == 0) {
 					dataManager->stop();
@@ -111,11 +109,13 @@ void MainApp::startMqtt()
 			{
 				static std::string downlinkBuffer;
 				if (offset == 0) downlinkBuffer.clear();
-				downlinkBuffer.append(payload, datasize);
+				if (payload && datasize > 0) {
+					downlinkBuffer.append(payload, datasize);
+				}
 
 				if (offset + datasize == totLen) {
 					string resp = protocol->onMessage(downlinkBuffer);
-					mqtt->publish(dataManager->getUid() + "/Uplink", resp,0,false,true);
+					mqtt->publish(dataManager->getUid() + "/Uplink", resp,0,false,false);
 					dataManager->setDeviceStatus("OK");
 					downlinkBuffer.clear();
 				}
@@ -143,24 +143,25 @@ void MainApp::onMode(WifiManager::Mode mode)
 	if (mode == WifiManager::WIFI_CLI_OK)
 	{
 #ifndef LINUX_PLATFORM
-		ESP_LOGI(TAG, "Initializing SNTP");
-		esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
-		esp_sntp_setservername(0, "pool.ntp.org");
-		esp_sntp_init();
-		setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
-		tzset();
+		if (!esp_sntp_enabled())
+		{
+			ESP_LOGI(TAG, "Initializing SNTP");
+			esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
+			esp_sntp_setservername(0, "pool.ntp.org");
+			esp_sntp_init();
+		}
 #endif
 		startMqtt();
 	}
 	if (mode == WifiManager::WIFI_CLI_FAIL)
 	{
-		vTaskDelay(pdMS_TO_TICKS(1000));
-		join();
+		ESP_LOGW(TAG, "Wi-Fi connection failed, retrying in background...");
 	}
 }
 
 
 
+#ifndef LINUX_PLATFORM
 esp_err_t MainApp::otaStart()
 {
 	esp_err_t err;
@@ -238,3 +239,4 @@ void MainApp::check_ota_state(void)
 		}
     }
 }
+#endif

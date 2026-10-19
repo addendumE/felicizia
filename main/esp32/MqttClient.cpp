@@ -31,6 +31,8 @@ bool MqttClient::start(const std::string& uri) {
     
     if (esp_mqtt_client_start(client) != ESP_OK) {
         ESP_LOGE(TAG, "Impossibile avviare il client MQTT.");
+        esp_mqtt_client_destroy(client);
+        client = nullptr;
         return false;
     }
 

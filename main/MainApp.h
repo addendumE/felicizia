@@ -15,10 +15,12 @@
 #include "UsRange.h"
 #include "MqttClient.h"
 
+#ifndef LINUX_PLATFORM
 #include "esp_ota_ops.h"
 #include "esp_flash_partitions.h"
 #include "esp_partition.h"
 #include "esp_image_format.h"
+#endif
 
 
 class MyPersistence: public Persistance {
@@ -40,7 +42,7 @@ public:
 			string msg =protocol.commitPropChange();
 			if (!msg.empty())
 			{
-				mqtt.publish(pubtopic,msg,0,false,true);
+				mqtt.publish(pubtopic,msg,0,false,false);
 				//ESP_LOGI("PER","mqtt msg %s %s",pubtopic.c_str(),msg.c_str());
 				websocket.send(msg);	
 			}
@@ -162,12 +164,15 @@ private:
 	MyPersistence *persistance;
 	Hal hal;
 	DataManager *dataManager;
+#ifndef LINUX_PLATFORM
 	esp_ota_handle_t ota_update_handle;
 	const esp_partition_t *ota_update_partition;
+#endif
 
 	void onMode(WifiManager::Mode mode);
 	void startMqtt();
 	void onMessage(const string&);
+#ifndef LINUX_PLATFORM
 	void onOTAenter(){otaStart();};
 	void onOTAexit(){
 		otaEnd();
@@ -178,6 +183,11 @@ private:
 	{
 		otaProcess(data,len);
 	}
+#else
+	void onOTAenter(){}
+	void onOTAexit(){}
+	void onOTAdata(const char *data, size_t len){}
+#endif
 	void onConfigRead(string &s)
 	{
 		objManager->getConf(s);
@@ -186,8 +196,10 @@ private:
 		return objManager->setConf(s);
 	}
 
+#ifndef LINUX_PLATFORM
 	esp_err_t otaStart();
 	esp_err_t otaProcess(const char *data, size_t len);
 	esp_err_t otaEnd();
 	void check_ota_state();
+#endif
 };

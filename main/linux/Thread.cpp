@@ -8,7 +8,7 @@
 #include "Thread.h"
 #include <stdio.h>
 
-Thread::Thread(std::string _id):
+Thread::Thread(std::string _id, size_t stack_size):
 	id(_id),
 	tid(0)
 {

@@ -13,6 +13,7 @@
 #define GPIO_NUM_21 21
 #define GPIO_NUM_20 20
 #define GPIO_NUM_9 9
+#define GPIO_NUM_2 2
 #define BUILD_VERSION "VER_LINUX"
 
 typedef enum {

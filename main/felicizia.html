@@ -239,6 +239,10 @@
         <!-- Status Bar Inferiore -->
         <div class="status-bar">
             <div class="status-bar-item">
+                <span class="status-bar-label">Versione SW:</span>
+                <span id="val_swVersion" class="status-bar-val">--</span>
+            </div>
+            <div class="status-bar-item">
                 <span class="status-bar-label">Restart Reason:</span>
                 <span id="val_restartReason" class="status-bar-val">--</span>
             </div>
@@ -344,6 +348,16 @@
             }
         }
 
+        function updateSwVersion(val) {
+            if (val === null || val === undefined || val === '') return;
+            const rawVal = typeof val === 'object' && val !== null ? (val.svalue !== undefined ? val.svalue : val.value) : val;
+            if (rawVal === undefined || rawVal === null || rawVal === '') return;
+            const el = document.getElementById('val_swVersion') || document.getElementById('val_sw_version');
+            if (el) {
+                el.innerText = String(rawVal);
+            }
+        }
+
         function requestDeviceDetails() {
             if (!client || !client.connected) return;
             const topic = document.getElementById('mqttTopic').value;
@@ -357,6 +371,10 @@
                     if (Array.isArray(data.properties)) {
                         data.properties.forEach(updateUI);
                     } else {
+                        if (data.properties.sw_version !== undefined) {
+                            const p = data.properties.sw_version;
+                            updateSwVersion(typeof p === 'object' && p !== null ? (p.svalue !== undefined ? p.svalue : p.value) : p);
+                        }
                         if (data.properties.reset_reason !== undefined) {
                             const p = data.properties.reset_reason;
                             updateResetReason(typeof p === 'object' && p !== null ? (p.value !== undefined ? p.value : p.svalue) : p);
@@ -367,6 +385,7 @@
                         }
                     }
                 }
+                if (data.sw_version !== undefined) updateSwVersion(data.sw_version);
                 if (data.reset_reason !== undefined) updateResetReason(data.reset_reason);
                 if (data.uptime !== undefined) updateRestartDate(data.uptime);
             }
@@ -489,7 +508,10 @@
                 if (isOn !== null) ledEl.classList.toggle('led-on', isOn);
             }
 
-            // 6. Logica Device (Restart Reason e Restart Date)
+            // 6. Logica Device (Restart Reason, Restart Date e Versione SW)
+            if (item.id === 'device_sw_version' || item.id === 'device_sw_version_value' || item.id === 'sw_version' || baseId === 'sw_version' || baseId === 'device_sw_version') {
+                updateSwVersion(item.svalue !== undefined ? item.svalue : item.value);
+            }
             if (item.id === 'device_reset_reason' || item.id === 'device_reset_reason_value' || item.id === 'reset_reason' || baseId === 'reset_reason' || baseId === 'device_reset_reason') {
                 updateResetReason(item.value !== undefined ? item.value : item.svalue);
             }
@@ -497,6 +519,7 @@
                 updateRestartDate(item.value !== undefined ? item.value : item.svalue);
             }
             if (item.id === 'device') {
+                if (item.sw_version !== undefined) updateSwVersion(item.sw_version);
                 if (item.reset_reason !== undefined) updateResetReason(item.reset_reason);
                 if (item.uptime !== undefined) updateRestartDate(item.uptime);
                 requestDeviceDetails();

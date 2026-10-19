@@ -53,6 +53,8 @@ bool MqttClient::start(const std::string& uri) {
     int ret = mosquitto_connect(mosq, host.c_str(), port, keepalive);
     if (ret != MOSQ_ERR_SUCCESS) {
         ESP_LOGE(TAG, "mosquitto_connect failed: %s", mosquitto_strerror(ret));
+        mosquitto_destroy(mosq);
+        mosq = nullptr;
         return false;
     }
 
@@ -71,7 +73,7 @@ bool MqttClient::stop() {
     return false;
 }
 
-bool MqttClient::publish(const std::string& topic, const std::string& payload, int qos, int retain) {
+bool MqttClient::publish(const std::string& topic, const std::string& payload, int qos, int retain, bool sync) {
     if (!mosq || !connected) {
         ESP_LOGE(TAG, "Not connected to MQTT broker, cannot publish");
         return false;

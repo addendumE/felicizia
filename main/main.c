@@ -19,20 +19,19 @@ html-minifier-terser index.full.html \
  
  */
 #include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "nvs.h"
+#include "esp_task_wdt.h"
 #include <i2cdev.h>
 static const char *TAG = "main";
 
 extern void startup();
-
-#include "nvs_flash.h"
-#include "nvs.h"
-#include "esp_log.h"
-#include "esp_task_wdt.h"
 void app_main(void)
 {
     esp_task_wdt_config_t twdt_config = {
@@ -58,5 +57,7 @@ void app_main(void)
     esp_log_level_set("OneW", ESP_LOG_INFO);
    // esp_log_level_set("DM", ESP_LOG_INFO);
     ESP_ERROR_CHECK(i2cdev_init());
+    setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
+    tzset();
     startup();
 }

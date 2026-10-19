@@ -10,6 +10,7 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "esp_timer.h"
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
@@ -27,6 +28,7 @@ public:
 		WIFI_CLI_FAIL
 	};
 	Mode getMode(){return mode;}
+	static bool isConnected() { return s_connected; }
 	bool off(bool silent=false);
 	bool join();
 	bool ap();
@@ -38,6 +40,7 @@ public:
 	string apHdr;
 	virtual void onMode(Mode) = 0;
 private:
+	static bool s_connected;
 	string ip;
 	Mode mode;
 	size_t s_retry_num;
@@ -48,6 +51,8 @@ private:
 	void wifi_init_sta(const string, const string);
 	void init_ap(const string ssid);
 
+	esp_timer_handle_t reconnect_timer;
+	static void reconnect_timer_cb(void* arg);
 	static void sta_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
 };

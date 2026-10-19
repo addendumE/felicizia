@@ -61,6 +61,10 @@ void Websocket::loop()
 	info.protocols = protocols;
 	info.mounts = &mount_files; // collega il mount
 	context = lws_create_context( &info );
+	if (!context) {
+		ESP_LOGE(TAG, "lws_create_context failed");
+		return;
+	}
 	while(true)
 	{
 		lws_service( context, 10);
@@ -70,7 +74,7 @@ void Websocket::loop()
 
 void Websocket::send(string s)
 {
-	if (clients.size() > 0)
+	if (context && clients.size() > 0)
 	{
 		Lock::take();
 		txMessages.push_back(s);

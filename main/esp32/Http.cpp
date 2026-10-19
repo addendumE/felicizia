@@ -16,6 +16,7 @@ Http::~Http() {
 #include "esp_crt_bundle.h"
 int Http::getSynch(const std::string url, std::string &_resp,int port)
 {
+	headers.clear();
 	esp_http_client_config_t config={};
 	int http_status = -1;
 	esp_err_t err;
@@ -77,11 +78,15 @@ esp_err_t Http::Http_EventHandler(esp_http_client_event_t *evt)
     case HTTP_EVENT_HEADER_SENT:
         break;
     case HTTP_EVENT_ON_HEADER:
-        ESP_LOGI(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
-        me->headers[string(evt->header_key)]=string(evt->header_value);
+        if (evt->header_key && evt->header_value) {
+            ESP_LOGI(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
+            me->headers[string(evt->header_key)] = string(evt->header_value);
+        }
         break;
     case HTTP_EVENT_ON_DATA:                                        /* Ricevuti dati Http*/
-    	*me->resp += string((char*)evt->data,(char*)evt->data + evt->data_len);
+        if (me->resp && evt->data && evt->data_len > 0) {
+            *me->resp += string((char*)evt->data, (char*)evt->data + evt->data_len);
+        }
         break;
     case HTTP_EVENT_ON_FINISH:                                      /* Terminato evento http*/
         ESP_LOGI(TAG,"HTTP_EVENT_ON_FINISH");

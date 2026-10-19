@@ -12,7 +12,7 @@ static const char *TAG="DM";
 #define IN_FEEDBACK_P_SERBATOIO    GPIO_NUM_20
 
 DataManager::DataManager (ObjManager &om,Persistance &persistance,Hal &hal):
-Thread("dataManager",8192),
+Thread("dataManager",16384),
 om(om),
 #if !defined(LINUX_PLATFORM) && !defined(IICdebug)
 mcp23x17Dev({}),
@@ -371,10 +371,14 @@ void DataManager::loop()
         conducibilitaOk.setValue(sccm.getValue());
 
 
-        // Ottieni l'orario corrente
+        // Ottieni l'orario corrente in modo sicuro e rientrante
         time_t now = time(NULL);
-        struct tm *t = localtime(&now);
-        float ore_da_mezzanotte = t->tm_hour + (t->tm_min / 60.0f) + (t->tm_sec / 3600.0f);
+        struct tm timeinfo = {};
+        struct tm *t = localtime_r(&now, &timeinfo);
+        float ore_da_mezzanotte = 0.0f;
+        if (t != nullptr) {
+            ore_da_mezzanotte = t->tm_hour + (t->tm_min / 60.0f) + (t->tm_sec / 3600.0f);
+        }
         orarioOk.setValue(ore_da_mezzanotte);
 
         cmdPompaRiempimento.setValue(
@@ -422,14 +426,18 @@ void DataManager::loop()
         doOutput();
         if (loopCnt % 600 == 0)
         {
-            ts.clean();
-            ts.setValue(1,vbatt.getValue());
-            ts.setValue(2,livFosso.getValue());
-            ts.setValue(3,livSerbatoio.getValue());
-            ts.setValue(4,tempAria.getValue());
-            ts.setValue(5,tempAcqua.getValue());
-            ts.setValue(6,sccm.getValue());
-            ts.publish(getKey());
+            string tsKey = getKey();
+            if (WifiManager::isConnected() && !tsKey.empty())
+            {
+                ts.clean();
+                ts.setValue(1,vbatt.getValue());
+                ts.setValue(2,livFosso.getValue());
+                ts.setValue(3,livSerbatoio.getValue());
+                ts.setValue(4,tempAria.getValue());
+                ts.setValue(5,tempAcqua.getValue());
+                ts.setValue(6,sccm.getValue());
+                ts.publish(tsKey);
+            }
         }
         else {
             string s = "";
@@ -485,15 +493,19 @@ void DataManager::loop()
             }
             if (s.size())
             {
-                ts.clean();
-                ts.setValue(1,vbatt.getValue());
-                ts.setValue(2,livFosso.getValue());
-                ts.setValue(3,livSerbatoio.getValue());
-                ts.setValue(4,tempAria.getValue());
-                ts.setValue(5,tempAcqua.getValue());
-                ts.setValue(6,sccm.getValue());
-                ts.setValue(7,s);
-                ts.publish(getKey());
+                string tsKey = getKey();
+                if (WifiManager::isConnected() && !tsKey.empty())
+                {
+                    ts.clean();
+                    ts.setValue(1,vbatt.getValue());
+                    ts.setValue(2,livFosso.getValue());
+                    ts.setValue(3,livSerbatoio.getValue());
+                    ts.setValue(4,tempAria.getValue());
+                    ts.setValue(5,tempAcqua.getValue());
+                    ts.setValue(6,sccm.getValue());
+                    ts.setValue(7,s);
+                    ts.publish(tsKey);
+                }
             }
             
         }
