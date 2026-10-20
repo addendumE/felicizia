@@ -29,5 +29,8 @@ private:
 	handleResult handleProperySet(cJSON *jReq,cJSON **jResp);
 	handleResult handleConfRead(cJSON *jReq,cJSON **jResp);
 	handleResult handleConfWrite(cJSON *jReq,cJSON **jResp);
+	handleResult handleCoredumpInfo(cJSON *jReq,cJSON **jResp);
+	handleResult handleCoredumpPart(cJSON *jReq,cJSON **jResp);
+	handleResult handleCoredumpErase(cJSON *jReq,cJSON **jResp);
 
 };

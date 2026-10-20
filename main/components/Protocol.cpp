@@ -7,7 +7,35 @@
 
 #include "Protocol.h"
 #include "esp_log.h"
+#include <cstdint>
+#include <vector>
+
+#ifndef LINUX_PLATFORM
+#include "esp_core_dump.h"
+#include "esp_partition.h"
+#endif
+
 static const char *TAG="PROTOCOL";
+
+#ifndef LINUX_PLATFORM
+static const char b64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+static std::string base64_encode(const uint8_t *data, size_t len) {
+	std::string out;
+	out.reserve(((len + 2) / 3) * 4);
+	for (size_t i = 0; i < len; i += 3) {
+		uint32_t b = ((uint32_t)data[i]) << 16;
+		if (i + 1 < len) b |= ((uint32_t)data[i + 1]) << 8;
+		if (i + 2 < len) b |= ((uint32_t)data[i + 2]);
+
+		out.push_back(b64_chars[(b >> 18) & 0x3F]);
+		out.push_back(b64_chars[(b >> 12) & 0x3F]);
+		out.push_back((i + 1 < len) ? b64_chars[(b >> 6) & 0x3F] : '=');
+		out.push_back((i + 2 < len) ? b64_chars[b & 0x3F] : '=');
+	}
+	return out;
+}
+#endif
 
 Protocol::Protocol(ObjManager &om):
 om(om),
@@ -118,6 +146,18 @@ string Protocol::onMessage(const string &msg)
 	{
 		handleConfWrite(jDataReq,&jDataResp);
 		res = RES_OK;
+	}
+	else if (cmd == "getCoredumpInfo")
+	{
+		res = handleCoredumpInfo(jDataReq, &jDataResp);
+	}
+	else if (cmd == "getCoredumpPart")
+	{
+		res = handleCoredumpPart(jDataReq, &jDataResp);
+	}
+	else if (cmd == "eraseCoredump")
+	{
+		res = handleCoredumpErase(jDataReq, &jDataResp);
 	}
 	//else if (cmd == "reboot")
 	//{
@@ -251,4 +291,111 @@ Protocol::handleResult Protocol::handleConfWrite(cJSON *jReq,cJSON **jResp)
 	}
 	return ret;
 }
-	
+
+Protocol::handleResult Protocol::handleCoredumpInfo(cJSON *jReq, cJSON **jResp)
+{
+	*jResp = cJSON_CreateObject();
+#ifndef LINUX_PLATFORM
+	esp_err_t err = esp_core_dump_image_check();
+	if (err != ESP_OK) {
+		cJSON_AddBoolToObject(*jResp, "hasDump", false);
+		return RES_OK;
+	}
+	size_t addr = 0, size = 0;
+	if (esp_core_dump_image_get(&addr, &size) != ESP_OK || size == 0) {
+		cJSON_AddBoolToObject(*jResp, "hasDump", false);
+		return RES_OK;
+	}
+	cJSON_AddBoolToObject(*jResp, "hasDump", true);
+	cJSON_AddNumberToObject(*jResp, "size", size);
+#if CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH && CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF
+	char reason[128] = {0};
+	if (esp_core_dump_get_panic_reason(reason, sizeof(reason)) == ESP_OK) {
+		cJSON_AddStringToObject(*jResp, "reason", reason);
+	}
+	esp_core_dump_summary_t summary;
+	if (esp_core_dump_get_summary(&summary) == ESP_OK) {
+		cJSON_AddStringToObject(*jResp, "task", summary.exc_task);
+		cJSON_AddNumberToObject(*jResp, "pc", summary.exc_pc);
+	}
+#endif
+#else
+	cJSON_AddBoolToObject(*jResp, "hasDump", false);
+#endif
+	return RES_OK;
+}
+
+Protocol::handleResult Protocol::handleCoredumpPart(cJSON *jReq, cJSON **jResp)
+{
+#ifndef LINUX_PLATFORM
+	esp_err_t err = esp_core_dump_image_check();
+	if (err != ESP_OK) {
+		return RES_ERR_INTERNAL;
+	}
+	size_t addr = 0, total_size = 0;
+	if (esp_core_dump_image_get(&addr, &total_size) != ESP_OK || total_size == 0) {
+		return RES_ERR_INTERNAL;
+	}
+
+	size_t offset = 0;
+	if (jReq) {
+		cJSON *jOff = cJSON_GetObjectItem(jReq, "offset");
+		if (cJSON_IsNumber(jOff) && jOff->valueint >= 0) {
+			offset = (size_t)jOff->valueint;
+		}
+	}
+
+	size_t chunk_len = 1024;
+	if (jReq) {
+		cJSON *jLen = cJSON_GetObjectItem(jReq, "length");
+		if (cJSON_IsNumber(jLen) && jLen->valueint > 0 && jLen->valueint <= 2048) {
+			chunk_len = (size_t)jLen->valueint;
+		}
+	}
+
+	if (offset >= total_size) {
+		return RES_ERR_INTERNAL;
+	}
+	if (offset + chunk_len > total_size) {
+		chunk_len = total_size - offset;
+	}
+
+	const esp_partition_t *part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, NULL);
+	if (!part) {
+		return RES_ERR_INTERNAL;
+	}
+
+	std::vector<uint8_t> buffer(chunk_len);
+	if (esp_partition_read(part, offset, buffer.data(), chunk_len) != ESP_OK) {
+		return RES_ERR_INTERNAL;
+	}
+
+	*jResp = cJSON_CreateObject();
+	cJSON_AddNumberToObject(*jResp, "offset", offset);
+	cJSON_AddNumberToObject(*jResp, "chunkSize", chunk_len);
+	cJSON_AddNumberToObject(*jResp, "totalSize", total_size);
+	cJSON_AddStringToObject(*jResp, "data", base64_encode(buffer.data(), chunk_len).c_str());
+	return RES_OK;
+#else
+	return RES_ERR_INTERNAL;
+#endif
+}
+
+Protocol::handleResult Protocol::handleCoredumpErase(cJSON *jReq, cJSON **jResp)
+{
+	*jResp = cJSON_CreateObject();
+#ifndef LINUX_PLATFORM
+	esp_err_t err = esp_core_dump_image_erase();
+	if (err == ESP_OK) {
+		cJSON_AddStringToObject(*jResp, "status", "erased");
+		return RES_OK;
+	} else {
+		cJSON_AddStringToObject(*jResp, "error", esp_err_to_name(err));
+		return RES_ERR_INTERNAL;
+	}
+#else
+	cJSON_AddStringToObject(*jResp, "status", "erased");
+	return RES_OK;
+#endif
+}
+

@@ -270,9 +270,20 @@
             <button onclick="uploadFirmware()">Upload Firmware via MQTT</button>
         </div>
 
-        <button onclick="downloadConfig()">
+        <button onclick="downloadConfig()" style="margin-bottom:15px;">
             Download Config via MQTT
         </button>
+
+        <div style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;">
+            <h4 style="margin:0 0 10px 0;">Crash Coredump</h4>
+            <div id="coredumpStatusText" style="margin-bottom:10px; font-size:0.9em; color:#444;">Stato: non verificato</div>
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <button onclick="checkCoredump()" style="flex:1;">Verifica Coredump</button>
+                <button id="btnDownloadCoredump" onclick="downloadCoredump()" style="flex:1; background:#ff9800;" disabled>Scarica .bin</button>
+                <button id="btnEraseCoredump" onclick="eraseCoredumpPrompt()" style="flex:1; background:#f44336;" disabled>Cancella</button>
+            </div>
+            <div id="coredumpProgress" style="font-size:0.85em; color:#007acc; display:none;"></div>
+        </div>
     </div>
 
     <table>
@@ -595,6 +606,51 @@
                 }
                 break;
 
+            case "getCoredumpInfo":
+                if (obj.result === "OK" && obj.data) {
+                    const st = document.getElementById('coredumpStatusText');
+                    const btnDl = document.getElementById('btnDownloadCoredump');
+                    const btnEr = document.getElementById('btnEraseCoredump');
+                    if (obj.data.hasDump) {
+                        let info = `<b>Coredump presente!</b> Dimensione: ${Math.round(obj.data.size / 1024)} KB (${obj.data.size} B)`;
+                        if (obj.data.task) info += `<br>Task: <b>${obj.data.task}</b> (PC: 0x${Number(obj.data.pc).toString(16)})`;
+                        if (obj.data.reason) info += `<br>Motivo: <i>${obj.data.reason}</i>`;
+                        st.innerHTML = info;
+                        btnDl.disabled = false;
+                        btnEr.disabled = false;
+                    } else {
+                        st.innerText = "Nessun coredump presente nella memoria Flash.";
+                        btnDl.disabled = true;
+                        btnEr.disabled = true;
+                    }
+                } else {
+                    alert("Errore verifica coredump: " + (obj.result || "sconosciuto"));
+                }
+                break;
+
+            case "getCoredumpPart":
+                if (obj.result === "OK" && obj.data) {
+                    handleCoredumpPartReceived(obj.data);
+                } else {
+                    const prog = document.getElementById('coredumpProgress');
+                    prog.style.display = 'none';
+                    document.getElementById('btnDownloadCoredump').disabled = false;
+                    alert("Errore scaricamento coredump: " + (obj.result || "dati mancanti"));
+                }
+                break;
+
+            case "eraseCoredump":
+                if (obj.result === "OK") {
+                    alert("Coredump cancellato con successo dalla memoria del dispositivo.");
+                    const st = document.getElementById('coredumpStatusText');
+                    st.innerText = "Coredump cancellato dalla memoria Flash.";
+                    document.getElementById('btnDownloadCoredump').disabled = true;
+                    document.getElementById('btnEraseCoredump').disabled = true;
+                } else {
+                    alert("Errore cancellazione coredump: " + (obj.result || "sconosciuto"));
+                }
+                break;
+
             case "writeConf":
             case "reboot":
                         alert(obj.id + ": " + obj.result);
@@ -690,8 +746,12 @@
                         );
                 
                     const devTools = document.getElementById('devTools');
-                    if (data.properties.type.value === 'DEV') devTools.classList.remove('hidden');
-                    else devTools.classList.add('hidden');
+                    if (data.properties.type.value === 'DEV') {
+                        devTools.classList.remove('hidden');
+                        checkCoredump();
+                    } else {
+                        devTools.classList.add('hidden');
+                    }
                 
                     list.innerHTML = '';
                 
@@ -816,6 +876,77 @@
                 
                 function downloadConfig() {
                     sendRequest("readConf");
+                }
+
+                let coredumpChunks = [];
+
+                function checkCoredump() {
+                    const st = document.getElementById('coredumpStatusText');
+                    if (st) st.innerText = "Verifica coredump in corso...";
+                    sendRequest("getCoredumpInfo");
+                }
+
+                function downloadCoredump() {
+                    coredumpChunks = [];
+                    const prog = document.getElementById('coredumpProgress');
+                    if (prog) {
+                        prog.style.display = 'block';
+                        prog.innerText = "Inizio download coredump...";
+                    }
+                    const btnDl = document.getElementById('btnDownloadCoredump');
+                    if (btnDl) btnDl.disabled = true;
+                    sendRequest("getCoredumpPart", { offset: 0, length: 1024 });
+                }
+
+                function handleCoredumpPartReceived(data) {
+                    const prog = document.getElementById('coredumpProgress');
+                    const binaryString = atob(data.data);
+                    const len = binaryString.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    coredumpChunks.push({ offset: data.offset, bytes: bytes });
+
+                    const receivedBytes = data.offset + data.chunkSize;
+                    const percent = Math.min(100, Math.round((receivedBytes / data.totalSize) * 100));
+                    if (prog) prog.innerText = `Scaricamento coredump: ${percent}% (${receivedBytes} / ${data.totalSize} byte)`;
+
+                    if (receivedBytes < data.totalSize) {
+                        sendRequest("getCoredumpPart", { offset: receivedBytes, length: 1024 });
+                    } else {
+                        if (prog) prog.innerText = "Scaricamento completato! Creazione file coredump.bin...";
+                        const totalBuffer = new Uint8Array(data.totalSize);
+                        for (const chunk of coredumpChunks) {
+                            totalBuffer.set(chunk.bytes, chunk.offset);
+                        }
+
+                        const blob = new Blob([totalBuffer], { type: 'application/octet-stream' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'coredump.bin';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        const btnDl = document.getElementById('btnDownloadCoredump');
+                        if (btnDl) btnDl.disabled = false;
+                        if (prog) prog.innerText = "File coredump.bin salvato con successo.";
+
+                        setTimeout(() => {
+                            if (confirm("Coredump scaricato con successo come 'coredump.bin'.\n\nVuoi cancellarlo adesso dalla memoria flash del dispositivo?")) {
+                                sendRequest("eraseCoredump");
+                            }
+                        }, 400);
+                    }
+                }
+
+                function eraseCoredumpPrompt() {
+                    if (confirm("Sei sicuro di voler cancellare il coredump dalla memoria flash del dispositivo?")) {
+                        sendRequest("eraseCoredump");
+                    }
                 }
                 
                 function uploadConfig() {
