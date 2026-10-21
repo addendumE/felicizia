@@ -30,6 +30,7 @@ html-minifier-terser index.full.html \
 #include "nvs.h"
 #include "esp_task_wdt.h"
 #include "esp_core_dump.h"
+#include "partition_table_update.h"
 #include <i2cdev.h>
 static const char *TAG = "main";
 
@@ -86,6 +87,8 @@ void app_main(void)
     esp_log_level_set("OneW", ESP_LOG_INFO);
    // esp_log_level_set("DM", ESP_LOG_INFO);
     esp_log_level_set("main", ESP_LOG_INFO);
+
+    update_partition_table();
 
     check_coredump();
 
